@@ -1,0 +1,13 @@
+-- Create a separate database for the User service
+CREATE DATABASE IF NOT EXISTS user_db;
+USE user_db;
+
+-- Create the users table
+CREATE TABLE IF NOT EXISTS users (
+  id VARCHAR(36) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  role VARCHAR(50) NOT NULL DEFAULT 'donor',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB;

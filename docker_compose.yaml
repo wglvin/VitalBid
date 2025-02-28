@@ -1,31 +1,41 @@
 version: '3.8'
 services:
-  # ... (other microservices: user-service, organs-service, transaction-service, etc.)
-
-  kafka:
-    image: bitnami/kafka:latest
-    container_name: kafka
+  orders-service:
+    build: ./services/orders-service
+    container_name: orders-service
     ports:
-      - "9092:9092"
+      - "3004:3004"
     environment:
-      - KAFKA_BROKER_ID=1
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - DB_HOST=mysql
+      - DB_USER=orders_user
+      - DB_PASS=orders_pass
+      - DB_NAME=orders_db
+      - USER_SERVICE_URL=http://user-service:3001/users
+      - ORGANS_SERVICE_URL=http://organs-service:3002/organs
+      - TRANSACTION_SERVICE_URL=http://transaction-service:3003/transactions
     depends_on:
-      - zookeeper
+      - mysql
+      - user-service
+      - organs-service
+      - transaction-service
 
-  zookeeper:
-    image: bitnami/zookeeper:latest
-    container_name: zookeeper
-    ports:
-      - "2181:2181"
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"    # AMQP port
-      - "15672:15672"  # RabbitMQ management UI
+  user-service:
+    # ...
+  
+  organs-service:
+    # ...
+  
+  transaction-service:
+    # ...
+  
+  mysql:
+    image: mysql:8
     environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=admin
+      - MYSQL_ROOT_PASSWORD=secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - my-mysql-data:/var/lib/mysql
+
+volumes:
+  my-mysql-data:
