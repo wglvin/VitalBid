@@ -20,14 +20,39 @@ services:
       - transaction-service
 
   user-service:
-    # ...
-  
+    build: ./services/user-service
+    container_name: user-service
+    ports:
+      - "3001:5000"
+    environment:
+      - DB_HOST=mysql
+      - DB_USER=user_user
+      - DB_PASS=user_pass
+      - DB_NAME=user_db
+    depends_on:
+      - mysql
+
   organs-service:
-    # ...
-  
+    build: ./services/organs-service
+    container_name: organs-service
+    ports:
+      - "3002:5001"
+    environment:
+      - DB_HOST=mysql
+      - DB_USER=organs_user
+      - DB_PASS=organs_pass
+      - DB_NAME=organs_db
+    depends_on:
+      - mysql
+
   transaction-service:
-    # ...
-  
+    build: ./services/transaction-service
+    container_name: transaction-service
+    ports:
+      - "3003:3003"
+    depends_on:
+      - mysql
+
   mysql:
     image: mysql:8
     environment:
