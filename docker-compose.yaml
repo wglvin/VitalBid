@@ -1,66 +1,100 @@
 version: '3.8'
+
 services:
-  orders-service:
-    build: ./services/orders-service
-    container_name: orders-service
-    ports:
-      - "3004:3004"
-    environment:
-      - DB_HOST=mysql
-      - DB_USER=orders_user
-      - DB_PASS=orders_pass
-      - DB_NAME=orders_db
-      - USER_SERVICE_URL=http://user-service:3001/users
-      - ORGANS_SERVICE_URL=http://organs-service:3002/organs
-      - TRANSACTION_SERVICE_URL=http://transaction-service:3003/transactions
-    depends_on:
-      - mysql
-      - user-service
-      - organs-service
-      - transaction-service
-
-  user-service:
-    build: ./services/user-service
-    container_name: user-service
-    ports:
-      - "3001:5000"
-    environment:
-      - DB_HOST=mysql
-      - DB_USER=user_user
-      - DB_PASS=user_pass
-      - DB_NAME=user_db
-    depends_on:
-      - mysql
-
-  organs-service:
-    build: ./services/organs-service
-    container_name: organs-service
-    ports:
-      - "3002:5001"
-    environment:
-      - DB_HOST=mysql
-      - DB_USER=organs_user
-      - DB_PASS=organs_pass
-      - DB_NAME=organs_db
-    depends_on:
-      - mysql
-
-  transaction-service:
-    build: ./services/transaction-service
-    container_name: transaction-service
-    ports:
-      - "3003:3003"
-    depends_on:
-      - mysql
-
+  # MySQL Database
   mysql:
-    image: mysql:8
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: unless-stopped
+    env_file: .env
     environment:
-      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
-      - my-mysql-data:/var/lib/mysql
+      - db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # List Service
+  list-service:
+    build: ./list-service
+    container_name: list_service
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    env_file: .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5001:5001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Bid Service
+  bid-service:
+    build: ./bid-service
+    container_name: bid_service
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    env_file: .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5002:5002"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # View Listing Bids Service (Composite)
+  view-listing-bids-service:
+    build: ./view-listing-bids-service
+    container_name: view_listing_bids_service
+    restart: unless-stopped
+    depends_on:
+      - list-service
+      - bid-service
+    ports:
+      - "5003:5003"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Kong API Gateway
+  kong:
+    image: kong:latest
+    container_name: kong
+    restart: unless-stopped
+    depends_on:
+      - list-service
+      - bid-service
+      - view-listing-bids-service
+    ports:
+      - "8000:8000"   # Proxy port
+      - "8001:8001"   # Admin API (in production, secure or disable this)
+    volumes:
+      - ./kong/kong.yml:/usr/local/kong/declarative/kong.yml:ro
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: "/usr/local/kong/declarative/kong.yml"
 
 volumes:
-  my-mysql-data:
+  db_data:
