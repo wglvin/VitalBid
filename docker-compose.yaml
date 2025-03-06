@@ -21,7 +21,7 @@ services:
     environment:
       - DB_HOST=mysql
       - DB_USER=root
-      - DB_PASSWORD=password
+      - DB_PASSWORD=''
       - DB_NAME=organ_marketplace
     ports:
       - "5001:5001"
@@ -35,7 +35,7 @@ services:
     environment:
       - DB_HOST=mysql
       - DB_USER=root
-      - DB_PASSWORD=password
+      - DB_PASSWORD=''
       - DB_NAME=organ_marketplace
     ports:
       - "5002:5002"
