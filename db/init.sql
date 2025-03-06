@@ -1,18 +1,13 @@
-CREATE DATABASE IF NOT EXISTS organ_marketplace;
+CREATE DATABASE organ_marketplace;
+
 USE organ_marketplace;
 
--- Create the user if it doesn't exist (MySQL 8 syntax):
-CREATE USER IF NOT EXISTS 'appuser'@'%' IDENTIFIED BY 'superSecureAppPassword';
-GRANT ALL PRIVILEGES ON organ_marketplace.* TO 'appuser'@'%';
-
--- OrganType table
-CREATE TABLE IF NOT EXISTS OrganType (
+CREATE TABLE OrganType (
     Type_ID INT AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(255) NOT NULL
 );
 
--- Listing table
-CREATE TABLE IF NOT EXISTS Listing (
+CREATE TABLE Listing (
     Listing_ID INT AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(255) NOT NULL,
     Time_End DATETIME NOT NULL,
@@ -23,8 +18,7 @@ CREATE TABLE IF NOT EXISTS Listing (
     FOREIGN KEY (Type_ID) REFERENCES OrganType(Type_ID)
 );
 
--- Bid table
-CREATE TABLE IF NOT EXISTS Bid (
+CREATE TABLE Bid (
     Bid_ID INT AUTO_INCREMENT PRIMARY KEY,
     Listing_ID INT,
     Time_Placed DATETIME NOT NULL,
