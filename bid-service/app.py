@@ -52,7 +52,6 @@ def get_bids():
         cursor.execute("SELECT * FROM Bid")
         bids = cursor.fetchall()
         cursor.close()
-        db.close()
         return jsonify(bids)
     except Error as err:
         return jsonify({"error": str(err)}), 500
