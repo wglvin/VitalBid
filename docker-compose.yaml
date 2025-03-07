@@ -33,46 +33,47 @@ services:
     ports:
       - "5001:5001"
 
-#   bid-service:
-#     build: ./bid-service
-#     container_name: bid_service
-#     restart: always
-#     depends_on:
-#       - mysql
-#     environment:
-#       - DB_HOST=mysql
-#       - DB_USER=appuser
-#       - DB_PASSWORD='superSecureAppPassword'
-#       - DB_NAME=organ_marketplace
-#     ports:
-#       - "5002:5002"
+  bid-service:
+    build: ./bid-service
+    container_name: bid_service
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_USER=root
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=organ_marketplace
+    ports:
+      - "5002:5002"
 
-#   view-listing-bids-service:
-#     build: ./view-listing-bids-service
-#     container_name: view_listing_bids_service
-#     restart: always
-#     depends_on:
-#       - list-service
-#       - bid-service
-#     ports:
-#       - "5003:5003"
+  view-listing-bids-service:
+    build: ./view-listing-bids-service
+    container_name: view_listing_bids_service
+    restart: always
+    depends_on:
+      - list-service
+      - bid-service
+    ports:
+      - "5003:5003"
 
-#   kong:
-#     image: kong:latest
-#     container_name: kong
-#     restart: always
-#     depends_on:
-#       - list-service
-#       - bid-service
-#       - view-listing-bids-service
-#     ports:
-#       - "8000:8000"
-#       - "8001:8001"
-#     volumes:
-#       - ./kong/kong.yml:/usr/local/kong/declarative/kong.yml
-#     environment:
-#       - KONG_DATABASE=off
-#       - KONG_DECLARATIVE_CONFIG=/usr/local/kong/declarative/kong.yml
+  kong:
+    image: kong:latest
+    container_name: kong
+    restart: always
+    depends_on:
+      - list-service
+      - bid-service
+      - view-listing-bids-service
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    volumes:
+      - ./kong/kong.yml:/usr/local/kong/declarative/kong.yml
+    environment:
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/usr/local/kong/declarative/kong.yml
 
 volumes:
   db_data:
