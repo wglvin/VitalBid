@@ -1,6 +1,5 @@
-DROP DATABASE IF EXISTS organ_marketplace;
-
-CREATE DATABASE organ_marketplace;
+-- DROP DATABASE IF EXISTS organ_marketplace;
+-- CREATE DATABASE organ_marketplace;
 
 USE organ_marketplace;
 
