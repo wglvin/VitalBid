@@ -1,79 +1,62 @@
-version: '3.8'
-
 services:
-  mysql:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: organ_marketplace
-    container_name: mysql_db
+  # Database service
+  db:
+    image: postgres:13
+    container_name: organ_db
     restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-organ_donation}
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      # - db_data:/var/lib/mysql
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-  list-service:
-    build: ./list-service
-    container_name: list_service
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - organ_network
+
+  # Listing Microservice
+  listing-service:
+    build: ./listing-service
+    container_name: listing_service
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
+      - db
     environment:
-      - MYSQL_HOST=mysql
-      - MYSQL_USER=root
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=organ_marketplace
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-organ_donation}
+      NODE_ENV: ${NODE_ENV:-development}
+      BIDDING_SERVICE_URL: http://bidding-service:3002
+      RESOLUTION_INTERVAL_MINUTES: 5
     ports:
-      - "5001:5001"
-
-  bid-service:
-    build: ./bid-service
-    container_name: bid_service
-    restart: always
-    depends_on:
-      mysql:
-        condition: service_healthy
-    environment:
-      - MYSQL_HOST=mysql
-      - MYSQL_USER=root
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=organ_marketplace
-    ports:
-      - "5002:5002"
-
-  view-listing-bids-service:
-    build: ./view-listing-bids-service
-    container_name: view_listing_bids_service
-    restart: always
-    depends_on:
-      - list-service
-      - bid-service
-    ports:
-      - "5003:5003"
-
-  kong:
-    image: kong:latest
-    container_name: kong
-    restart: always
-    depends_on:
-      - list-service
-      - bid-service
-      - view-listing-bids-service
-    ports:
-      - "8000:8000"
-      - "8001:8001"
+      - "3001:3001"
+    networks:
+      - organ_network
     volumes:
-      - ./kong/kong.yml:/usr/local/kong/declarative/kong.yml
+      - ./listing-service:/app
+      - /app/node_modules
+
+  # Bidding Microservice
+  bidding-service:
+    build: ./bidding-service
+    container_name: bidding_service
+    restart: always
+    depends_on:
+      - db
     environment:
-      - KONG_DATABASE=off
-      - KONG_DECLARATIVE_CONFIG=/usr/local/kong/declarative/kong.yml
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-organ_donation}
+      NODE_ENV: ${NODE_ENV:-development}
+      LISTING_SERVICE_URL: http://listing-service:3001
+    ports:
+      - "3002:3002"
+    networks:
+      - organ_network
+    volumes:
+      - ./bidding-service:/app
+      - /app/node_modules
+
+networks:
+  organ_network:
+    driver: bridge
 
 volumes:
-  db_data:
+  postgres_data:
