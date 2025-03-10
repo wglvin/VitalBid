@@ -54,6 +54,25 @@ services:
       - ./bidding-service:/app
       - /app/node_modules
 
+  # View Listing Bids Composite Microservice (Python)
+  view-listing-bids-service:
+    build: ./view-listing-bids-service
+    container_name: view_listing_bids_service
+    restart: always
+    depends_on:
+      - listing-service
+      - bidding-service
+    environment:
+      LISTING_SERVICE_URL: http://listing-service:3001
+      BIDDING_SERVICE_URL: http://bidding-service:3002
+      PORT: 3003
+    ports:
+      - "3003:3003"
+    networks:
+      - organ_network
+    volumes:
+      - ./view-listing-bids-service:/app
+
 networks:
   organ_network:
     driver: bridge
