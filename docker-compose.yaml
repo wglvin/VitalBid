@@ -65,14 +65,30 @@ services:
     environment:
       LISTING_SERVICE_URL: http://listing-service:3001
       BIDDING_SERVICE_URL: http://bidding-service:3002
-      PORT: 3003
+      PORT: 8000
     ports:
-      - "3003:3003"
+      - "8000:8000"
     networks:
       - organ_network
     volumes:
       - ./view-listing-bids-service:/app
 
+   # Frontend Application
+  frontend:
+    build: ./frontend-logic
+    container_name: frontend
+    restart: always
+    depends_on:
+      - view-listing-bids-service
+    ports:
+      - "3000:3000"  # Next.js default port
+    networks:
+      - organ_network
+    volumes:
+      - ./frontend-logic:/app
+      - /app/node_modules
+      - /app/.next
+      
 networks:
   organ_network:
     driver: bridge

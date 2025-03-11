@@ -85,8 +85,8 @@ db.initialize = async () => {
     // Create the schema if it doesn't exist
     await sequelize.query('CREATE SCHEMA IF NOT EXISTS listing_service;');
     
-    // Sync all models with the database
-    await sequelize.sync();
+    // Sync all models with the database WITHOUT dropping tables
+    await sequelize.sync({ force: false, alter: true });
     console.log('Listing service database synchronized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
