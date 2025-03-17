@@ -15,5 +15,9 @@ module.exports = {
         apiKey: process.env.MAILGUN_API_KEY || 'your-mailgun-api-key',
         domain: process.env.MAILGUN_DOMAIN || 'your-mailgun-domain.com',
         from: process.env.EMAIL_FROM || 'OrganMarketplace <no-reply@organmarketplace.com>'
+    },
+    notificationProviders: {
+        direct: process.env.DIRECT_NOTIFICATION_URL || 'http://push-notification-service:3005/send',
+        push: process.env.PUSH_NOTIFICATION_URL || 'http://push-notification-service:3005/push'
     }
 };

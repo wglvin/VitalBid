@@ -1,6 +1,6 @@
 const { Kafka } = require('kafkajs');
-const config = require('./config');
-const { processListingCreatedEvent } = require('./notificationService');
+const config = require('../config/config');
+const { processListingCreatedEvent } = require('../services/notificationService');
 
 const kafka = new Kafka({
     clientId: config.kafka.clientId,

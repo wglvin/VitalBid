@@ -1,35 +1,14 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { 
-    sendNotification, 
-    processListingCreatedEvent 
-} = require('./notificationService');
-const { setupKafkaConsumer } = require('./kafkaConsumer');
-const config = require('./config');
+const notificationRoutes = require('./routes/notificationRoutes');
+const { setupKafkaConsumer } = require('./kafka/kafkaConsumer');
+const config = require('./config/config');
 
 const app = express();
 app.use(bodyParser.json());
 
-// Direct API endpoint for sending notifications
-app.post('/notify', (req, res) => {
-    const { userId, message } = req.body;
-    sendNotification(userId, message)
-        .then(response => res.status(200).send(response))
-        .catch(error => res.status(500).send(error));
-});
-
-// API endpoint for sending email notifications
-app.post('/notify/email', (req, res) => {
-    const { email, subject, text } = req.body;
-    sendEmailNotification(email, subject, text)
-        .then(response => res.status(200).send({ status: 'success', messageId: response.id }))
-        .catch(error => res.status(500).send({ status: 'error', message: error.message }));
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.status(200).send({ status: 'UP', service: 'notification-service' });
-});
+// Use routes
+app.use('/', notificationRoutes);
 
 const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {

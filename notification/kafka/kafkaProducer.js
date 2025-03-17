@@ -1,5 +1,5 @@
 const { Kafka } = require('kafkajs');
-const config = require('./config');
+const config = require('../config/config');
 
 const kafka = new Kafka({
     clientId: config.kafka.clientId,

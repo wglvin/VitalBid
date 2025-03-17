@@ -1,7 +1,8 @@
 const axios = require('axios');
 const mailgun = require('mailgun-js');
-const config = require('./config');
-const { produceMessage } = require('./kafkaProducer');
+const config = require('../config/config');
+const { produceMessage } = require('../kafka/kafkaProducer');
+const Notification = require('../models/notificationModel');
 
 const mg = mailgun({
     apiKey: config.mailgun.apiKey,
@@ -10,12 +11,38 @@ const mg = mailgun({
 
 const sendNotification = async (userId, message) => {
     try {
-        const response = await axios.post('https://example.com/send', {
+        // Create a notification model instance
+        const notification = new Notification(userId, 'direct', message);
+        
+        const response = await axios.post(config.notificationProviders.direct, {
             userId,
             message
         });
+        
+        // Update notification status
+        notification.status = 'sent';
+        
+        // Publish notification sent event to Kafka
+        await produceMessage(config.kafka.topics.notifications, {
+            type: 'DirectNotificationSent',
+            userId,
+            status: 'success',
+            timestamp: new Date().toISOString()
+        });
+        
         return response.data;
     } catch (error) {
+        console.error('Failed to send direct notification:', error);
+        
+        // Publish notification failed event to Kafka
+        await produceMessage(config.kafka.topics.notifications, {
+            type: 'DirectNotificationFailed',
+            userId,
+            status: 'error',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+        
         throw new Error('Failed to send notification');
     }
 };
