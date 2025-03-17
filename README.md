@@ -26,9 +26,14 @@ Backend Folder: Microservices, each run by flask
    docker stop <container_id>
    ```
 
-3. Build & Run all docker images in folder
+3. Build & Run all docker images in folder ONLY
    ```sh
    docker-compose up -d --build
+   ```
+   OR
+3. Remove database volumes declared (reset tables to fresh state) before building again
+   ```sh
+   docker-compose down -v && docker-compose up -d --build
    ```
 
 ### .env file
