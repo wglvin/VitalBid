@@ -1,19 +1,47 @@
 services:
-  # Database service
-  db:
+  # Listing Database service
+  listing-db:
     image: postgres:13
-    container_name: organ_db
+    container_name: listing_db
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_DB: ${POSTGRES_DB:-organ_donation}
+      POSTGRES_DB: listing_db
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - listing_postgres_data:/var/lib/postgresql/data
+      - ./listing_db/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - organ_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Bidding Database service
+  bidding-db:
+    image: postgres:13
+    container_name: bidding_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: bidding_db
+    ports:
+      - "5433:5432"  # Changed port to avoid conflict
+    volumes:
+      - bidding_postgres_data:/var/lib/postgresql/data
+      - ./bidding_db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - organ_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Listing Microservice
   listing-service:
@@ -21,9 +49,11 @@ services:
     container_name: listing_service
     restart: always
     depends_on:
-      - db
+      - listing-db
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-organ_donation}
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@listing-db:5432/${POSTGRES_DB:-listing_db}
+      DB_HOST: listing-db
+      POSTGRES_DB: listing_db
       NODE_ENV: ${NODE_ENV:-development}
       BIDDING_SERVICE_URL: http://bidding-service:3002
       RESOLUTION_INTERVAL_MINUTES: 5
@@ -33,6 +63,7 @@ services:
       - organ_network
     volumes:
       - ./listing-service:/app
+      - ./listing_db:/app/db
       - /app/node_modules
 
   # Bidding Microservice
@@ -41,9 +72,11 @@ services:
     container_name: bidding_service
     restart: always
     depends_on:
-      - db
+      - bidding-db
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-organ_donation}
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@bidding-db:5432/${POSTGRES_DB:-bidding_db}
+      DB_HOST: bidding-db
+      POSTGRES_DB: bidding_db
       NODE_ENV: ${NODE_ENV:-development}
       LISTING_SERVICE_URL: http://listing-service:3001
     ports:
@@ -52,6 +85,7 @@ services:
       - organ_network
     volumes:
       - ./bidding-service:/app
+      - ./bidding_db:/app/db
       - /app/node_modules
 
   # View Listing Bids Composite Microservice (Python)
@@ -94,4 +128,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  listing_postgres_data:
+  bidding_postgres_data:
