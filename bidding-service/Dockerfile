@@ -2,6 +2,9 @@ FROM node:16-alpine
 
 WORKDIR /app
 
+# Install MySQL client
+RUN apk add --no-cache mysql-client
+
 # Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install

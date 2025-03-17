@@ -1,7 +1,7 @@
 -- Remove the CREATE DATABASE and \c commands, just create table
 CREATE TABLE Bid (
-    Bid_ID SERIAL PRIMARY KEY,
+    Bid_ID INT AUTO_INCREMENT PRIMARY KEY,
     Listing_ID INT,
-    Time_Placed TIMESTAMP NOT NULL,
+    Time_Placed DATETIME NOT NULL,
     Bid_Amt DECIMAL(10,2) NOT NULL
 ); 

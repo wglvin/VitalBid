@@ -1,16 +1,11 @@
 // Database configuration
 const dbConfig = {
   host: process.env.DB_HOST || 'bidding-db',
-  dialect: 'postgres',
-  username: process.env.POSTGRES_USER || 'postgres',
-  password: process.env.POSTGRES_PASSWORD || 'changeme',
-  database: process.env.POSTGRES_DB || 'bidding_db',
-  dialectOptions: {
-    ssl: process.env.DB_SSL === 'true' ? {
-      require: true,
-      rejectUnauthorized: false
-    } : false
-  },
+  port: process.env.DB_PORT || 3306,
+  dialect: 'mysql',
+  username: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'password',
+  database: process.env.DB_NAME || 'bidding_db',
   pool: {
     max: 5,
     min: 0,

@@ -1,44 +1,42 @@
 services:
   # Listing Database service
   listing-db:
-    image: postgres:13
+    image: mysql:8.0
     container_name: listing_db
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_DB: listing_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      MYSQL_DATABASE: listing_db
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - listing_postgres_data:/var/lib/postgresql/data
+      - listing_mysql_data:/var/lib/mysql
       - ./listing_db/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - organ_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-password}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   # Bidding Database service
   bidding-db:
-    image: postgres:13
+    image: mysql:8.0
     container_name: bidding_db
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_DB: bidding_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      MYSQL_DATABASE: bidding_db
     ports:
-      - "5433:5432"  # Changed port to avoid conflict
+      - "3307:3306"  # Changed port to avoid conflict
     volumes:
-      - bidding_postgres_data:/var/lib/postgresql/data
+      - bidding_mysql_data:/var/lib/mysql
       - ./bidding_db/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - organ_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-password}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -51,9 +49,12 @@ services:
     depends_on:
       - listing-db
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@listing-db:5432/${POSTGRES_DB:-listing_db}
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-password}@listing-db:3306/listing_db
       DB_HOST: listing-db
-      POSTGRES_DB: listing_db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      DB_NAME: listing_db
       NODE_ENV: ${NODE_ENV:-development}
       BIDDING_SERVICE_URL: http://bidding-service:3002
       RESOLUTION_INTERVAL_MINUTES: 5
@@ -74,9 +75,12 @@ services:
     depends_on:
       - bidding-db
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@bidding-db:5432/${POSTGRES_DB:-bidding_db}
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-password}@bidding-db:3306/bidding_db
       DB_HOST: bidding-db
-      POSTGRES_DB: bidding_db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      DB_NAME: bidding_db
       NODE_ENV: ${NODE_ENV:-development}
       LISTING_SERVICE_URL: http://listing-service:3001
     ports:
@@ -128,5 +132,5 @@ networks:
     driver: bridge
 
 volumes:
-  listing_postgres_data:
-  bidding_postgres_data:
+  listing_mysql_data:
+  bidding_mysql_data:
