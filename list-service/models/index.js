@@ -4,7 +4,7 @@ const config = require('../config/config');
 const sequelize = new Sequelize(config.database, config.username, config.password, {
   host: config.host,
   dialect: config.dialect,
-  schema: 'listing_service', // Add schema to isolate tables per microservice
+  schema: 'list_service', // Add schema to isolate tables per microservice
   logging: false
 });
 
@@ -83,7 +83,7 @@ const db = {
 db.initialize = async () => {
   try {
     // Create the schema if it doesn't exist
-    await sequelize.query('CREATE SCHEMA IF NOT EXISTS listing_service;');
+    await sequelize.query('CREATE SCHEMA IF NOT EXISTS list_service;');
     
     // Sync all models with the database WITHOUT dropping tables
     await sequelize.sync({ force: false, alter: true });

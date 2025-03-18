@@ -14,9 +14,9 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Configure service URLs from environment variables
-LISTING_SERVICE_URL = os.environ.get('LISTING_SERVICE_URL', 'http://listing-service:3001')
-BIDDING_SERVICE_URL = os.environ.get('BIDDING_SERVICE_URL', 'http://bidding-service:3002')
-PORT = int(os.environ.get('PORT', 8000))  # Changed to 8000 to match frontend expectations
+LISTING_SERVICE_URL = os.environ.get('LISTING_SERVICE_URL')
+BIDDING_SERVICE_URL = os.environ.get('BIDDING_SERVICE_URL')
+PORT = int(os.environ.get('PORT', 5001))
 
 # Create a directory for storing proof files
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')

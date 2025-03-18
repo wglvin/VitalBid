@@ -25,7 +25,7 @@ class ListingService {
       for (const listing of expiredListings) {
         try {
           // Get the highest bid from the bidding service
-          const biddingServiceUrl = process.env.BIDDING_SERVICE_URL || 'http://bidding-service:3002';
+          const biddingServiceUrl = process.env.BIDDING_SERVICE_URL || 'http://bid-service:3002';
           const response = await axios.get(`${biddingServiceUrl}/api/bids/highest/${listing.id}`);
           
           if (response.data && response.data.highestBid) {

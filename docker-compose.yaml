@@ -42,55 +42,55 @@ services:
       retries: 5
 
   # Listing Microservice
-  listing-service:
-    build: ./listing-service
-    container_name: listing_service
+  list-service:
+    build: ./list-service
+    container_name: list_service
     restart: always
     depends_on:
       - listing-db
     environment:
-      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-password}@listing-db:3306/listing_db
+      # DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@listing-db:3306/listing_db
       DB_HOST: listing-db
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
       DB_NAME: listing_db
       NODE_ENV: ${NODE_ENV:-development}
-      BIDDING_SERVICE_URL: http://bidding-service:3002
+      LISTING_SERVICE_URL: http://list-service:3001
       RESOLUTION_INTERVAL_MINUTES: 5
     ports:
       - "3001:3001"
     networks:
       - organ_network
     volumes:
-      - ./listing-service:/app
-      - ./listing_db:/app/db
+      - ./list-service:/app
       - /app/node_modules
 
+
   # Bidding Microservice
-  bidding-service:
-    build: ./bidding-service
-    container_name: bidding_service
+  bid-service:
+    build: ./bid-service
+    container_name: bid_service
     restart: always
     depends_on:
       - bidding-db
     environment:
-      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:-password}@bidding-db:3306/bidding_db
+      # DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@bidding-db:3306/bidding_db
       DB_HOST: bidding-db
       DB_PORT: 3306
       DB_USER: root
-      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       DB_NAME: bidding_db
       NODE_ENV: ${NODE_ENV:-development}
-      LISTING_SERVICE_URL: http://listing-service:3001
+      BIDDING_SERVICE_URL: http://bid-service:3002
     ports:
       - "3002:3002"
     networks:
       - organ_network
     volumes:
-      - ./bidding-service:/app
-      - ./bidding_db:/app/db
+      - ./bid-service:/app
       - /app/node_modules
+
 
   # View Listing Bids Composite Microservice (Python)
   view-listing-bids-service:
@@ -98,18 +98,35 @@ services:
     container_name: view_listing_bids_service
     restart: always
     depends_on:
-      - listing-service
-      - bidding-service
+      - list-service
+      - bid-service
     environment:
-      LISTING_SERVICE_URL: http://listing-service:3001
-      BIDDING_SERVICE_URL: http://bidding-service:3002
-      PORT: 8000
+      LISTING_SERVICE_URL: http://list-service:3001
+      BIDDING_SERVICE_URL: http://bid-service:3002
     ports:
-      - "8000:8000"
+      - "5001:5001"
     networks:
       - organ_network
     volumes:
       - ./view-listing-bids-service:/app
+
+  kong:
+    image: kong:latest
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    volumes:
+      - ./kong/kong.yml:/kong/kong.yml
+    ports:
+      - "8000:8000"  # Kong proxy
+      - "8001:8001"  # Kong admin
+    networks:
+      - organ_network
 
    # Frontend Application
   frontend:

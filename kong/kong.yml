@@ -2,21 +2,21 @@ _format_version: "1.1"
 
 services:
   - name: list-service
-    url: http://list-service:5001
+    url: http://list-service:3001
     routes:
       - name: list-route
         paths:
           - /listing
 
   - name: bid-service
-    url: http://bid-service:5002
+    url: http://bid-service:3002
     routes:
       - name: bid-route
         paths:
           - /bidding
 
   - name: view-listing-bids-service
-    url: http://view-listing-bids-service:5003
+    url: http://view-listing-bids-service:5001
     routes:
       - name: view-listing-route
         paths:
