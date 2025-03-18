@@ -14,9 +14,10 @@ Key features of our organ auction platform include:
 
 ## File Structure
 Frontend Folder: Website, run by node.js
-Backend Folder: Microservices, each run by flask
+Backend Folder: Microservices, each run by flask OR node.js
 
-### Running ALL Docker Images 
+
+## Running ALL Docker Images 
 1. Check if any docker images are already running
    ```sh
    docker ps
@@ -36,8 +37,23 @@ Backend Folder: Microservices, each run by flask
    docker-compose down -v && docker-compose up -d --build
    ```
 
-### .env file
+## .env file
 1. Get .env credentials from meepok xoxo
+
+### External Port Binding Legend
+30xx: Atomic Microservices </br>
+33xx: Atomic Database Microservices </br>
+50xx: Composite Microservices </br>
+80xx: External Techology Microservices </br>
+
+## External Ports in Use
+3001: List Microservice </br>
+3002: Bid Microservice </br>
+3306: List Database </br>
+3307: Bid Database </br>
+5001: View Listing & Bid Service </br>
+8000: Kong API Gateway
+8001: Kong Admin
 
 ## Contributing Guidelines
 When contributing to this project, please follow these commit message guidelines:
