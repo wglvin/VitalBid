@@ -55,6 +55,18 @@ Backend Folder: Microservices, each run by flask OR node.js
 8000: Kong API Gateway
 8001: Kong Admin
 
+## Frontend
+
+The application uses a simple HTML/CSS/JavaScript-based frontend served by Nginx. The frontend communicates with the backend microservices through the Kong API Gateway.
+
+Key features:
+- View all organ listings with filtering by status (active/ended)
+- View listing details with bid history
+- Place bids on active listings
+- Create new organ listings
+
+The frontend is built with vanilla JavaScript and styled with TailwindCSS for a clean, responsive design.
+
 ## Contributing Guidelines
 When contributing to this project, please follow these commit message guidelines:
 * For changes specific to an Image: "[Image]: [Message]"

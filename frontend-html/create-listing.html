@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Listing - Organ Donation Marketplace</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <h1 class="text-xl font-bold">Organ Donation Marketplace</h1>
+                    </div>
+                    <nav class="ml-6 flex space-x-8">
+                        <a href="index.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Listings
+                        </a>
+                        <a href="create-listing.html" class="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Create Listing
+                        </a>
+                        <a href="manage-organs.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Manage Organs
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Create New Listing</h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">Add a new organ listing to the marketplace</p>
+            </div>
+            <div class="border-t border-gray-200">
+                <form id="create-listing-form" class="px-4 py-5 sm:p-6">
+                    <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                        <div class="sm:col-span-4">
+                            <label for="listing-name" class="block text-sm font-medium text-gray-700">Listing Title</label>
+                            <div class="mt-1">
+                                <input type="text" name="listing-name" id="listing-name" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" required>
+                            </div>
+                        </div>
+
+                        <div class="sm:col-span-6">
+                            <label for="listing-description" class="block text-sm font-medium text-gray-700">Description</label>
+                            <div class="mt-1">
+                                <textarea id="listing-description" name="listing-description" rows="3" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"></textarea>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500">Brief description of the organ and condition.</p>
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="organ-id" class="block text-sm font-medium text-gray-700">Organ</label>
+                            <div class="mt-1">
+                                <select id="organ-id" name="organ-id" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" required>
+                                    <option value="">Select an organ</option>
+                                    <!-- Options will be populated by JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="donor-id" class="block text-sm font-medium text-gray-700">Donor ID</label>
+                            <div class="mt-1">
+                                <input type="text" name="donor-id" id="donor-id" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" required>
+                            </div>
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="starting-bid" class="block text-sm font-medium text-gray-700">Starting Bid ($)</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">$</span>
+                                </div>
+                                <input type="number" name="starting-bid" id="starting-bid" class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md" placeholder="0.00" min="1" step="0.01" required>
+                            </div>
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="expiry-date" class="block text-sm font-medium text-gray-700">Listing End Date</label>
+                            <div class="mt-1">
+                                <input type="datetime-local" name="expiry-date" id="expiry-date" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6">
+                        <p id="form-error" class="text-sm text-red-600 mb-4 hidden"></p>
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Create Listing
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api-service.js"></script>
+    <script src="js/create-listing.js"></script>
+</body>
+</html> 

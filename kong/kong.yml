@@ -21,7 +21,7 @@ services:
       - name: view-listing-route
         paths:
           - /get_listing_bids
-
+ 
 # For Reference:
 # localhost:8000/listing = http://localhost:3001 = http://list-service:3001
 
