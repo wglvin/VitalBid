@@ -4,6 +4,7 @@ const db = require('./models');
 const listingRoutes = require('./routes/listingRoutes');
 const organRoutes = require('./routes/organRoutes');
 const listingService = require('./services/listingService');
+const { testConnection } = require('./config/database');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -24,7 +25,10 @@ app.get('/health', (req, res) => {
 // Initialize database and start server
 const startServer = async () => {
   try {
-    // Initialize the database
+    // Test database connection
+    await testConnection();
+    
+    // Initialize the database 
     await db.initialize();
     
     // Start the server

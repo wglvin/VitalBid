@@ -1,97 +1,205 @@
-const { Sequelize, DataTypes } = require('sequelize');
-const config = require('../config/config');
+const { v4: uuidv4 } = require('uuid');
+const { executeQuery } = require('../config/database');
 
-const sequelize = new Sequelize(config.database, config.username, config.password, {
-  host: config.host,
-  dialect: config.dialect,
-  schema: 'list_service', // Add schema to isolate tables per microservice
-  logging: false
-});
-
-// Define models specific to the listing service
-const Organ = sequelize.define('Organ', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
+// Organ model - direct SQL implementation
+const Organ = {
+  // Find all organs
+  findAll: async () => {
+    const sql = 'SELECT * FROM organs';
+    return executeQuery(sql);
   },
-  type: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true, // Add uniqueness constraint to prevent duplicate organ types
-    validate: {
-      notEmpty: true
+  
+  // Find organ by primary key (id)
+  findByPk: async (id) => {
+    const sql = 'SELECT * FROM organs WHERE id = ?';
+    const results = await executeQuery(sql, [id]);
+    return results.length ? results[0] : null;
+  },
+  
+  // Find organ by specific condition
+  findOne: async (condition) => {
+    let sql = 'SELECT * FROM organs WHERE ';
+    const params = [];
+    
+    // Handle the 'where' condition for type
+    if (condition.where && condition.where.type) {
+      sql += 'type = ?';
+      params.push(condition.where.type);
+    } else {
+      throw new Error('Invalid condition for findOne');
     }
+    
+    const results = await executeQuery(sql, params);
+    return results.length ? results[0] : null;
   },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true
+  
+  // Create a new organ
+  create: async (data) => {
+    const id = data.id || uuidv4();
+    const sql = 'INSERT INTO organs (id, type, description, createdAt, updatedAt) VALUES (?, ?, ?, NOW(), NOW())';
+    await executeQuery(sql, [id, data.type, data.description]);
+    
+    // Return the created organ
+    return { ...data, id };
+  },
+  
+  // Update an organ
+  update: async (data, condition) => {
+    const { type, description } = data;
+    const { id } = condition.where;
+    
+    const sql = 'UPDATE organs SET type = ?, description = ?, updatedAt = NOW() WHERE id = ?';
+    await executeQuery(sql, [type, description, id]);
+    
+    // Return the updated organ count
+    return [1]; // [affectedRows]
+  },
+  
+  // Delete an organ
+  destroy: async (condition) => {
+    const { id } = condition.where;
+    
+    const sql = 'DELETE FROM organs WHERE id = ?';
+    const result = await executeQuery(sql, [id]);
+    
+    // Return the number of deleted rows
+    return result.affectedRows;
   }
-});
-
-const Listing = sequelize.define('Listing', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true
-  },
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate: {
-      notEmpty: true
-    }
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  startingPrice: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-    validate: {
-      min: 0
-    }
-  },
-  status: {
-    type: DataTypes.ENUM('active', 'pending', 'completed', 'cancelled'),
-    defaultValue: 'active'
-  },
-  expiryDate: {
-    type: DataTypes.DATE,
-    allowNull: false
-  },
-  donorId: {
-    type: DataTypes.UUID,
-    allowNull: false
-  }
-});
-
-// Define relationships between models
-Listing.belongsTo(Organ, { foreignKey: 'organId' });
-Organ.hasMany(Listing, { foreignKey: 'organId' });
-
-// Initialize models and relationships
-const db = {
-  sequelize,
-  Sequelize,
-  Organ,
-  Listing
 };
 
-// Function to initialize database with schema creation
-db.initialize = async () => {
-  try {
-    // Create the schema if it doesn't exist
-    await sequelize.query('CREATE SCHEMA IF NOT EXISTS list_service;');
+// Listing model - direct SQL implementation
+const Listing = {
+  // Find all listings
+  findAll: async (options = {}) => {
+    let sql = 'SELECT l.*, o.type as organType, o.description as organDescription FROM listings l JOIN organs o ON l.organId = o.id';
+    const params = [];
     
-    // Sync all models with the database WITHOUT dropping tables
-    await sequelize.sync({ force: false, alter: true });
-    console.log('Listing service database synchronized successfully');
+    // Handle where condition if present
+    if (options.where) {
+      const whereClauses = [];
+      
+      // Add status filter if present
+      if (options.where.status) {
+        whereClauses.push('l.status = ?');
+        params.push(options.where.status);
+      }
+      
+      // Add expiry date filter if present
+      if (options.where.expiryDate && options.where.expiryDate['[Op.lt]']) {
+        whereClauses.push('l.expiryDate < ?');
+        params.push(options.where.expiryDate['[Op.lt]']);
+      }
+      
+      if (whereClauses.length) {
+        sql += ' WHERE ' + whereClauses.join(' AND ');
+      }
+    }
+    
+    return executeQuery(sql, params);
+  },
+  
+  // Find listing by primary key (id)
+  findByPk: async (id) => {
+    const sql = 'SELECT l.*, o.type as organType, o.description as organDescription FROM listings l JOIN organs o ON l.organId = o.id WHERE l.id = ?';
+    const results = await executeQuery(sql, [id]);
+    return results.length ? results[0] : null;
+  },
+  
+  // Create a new listing
+  create: async (data) => {
+    const id = data.id || uuidv4();
+    const sql = `
+      INSERT INTO listings 
+      (id, title, description, startingPrice, status, expiryDate, donorId, organId, createdAt, updatedAt) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    `;
+    
+    await executeQuery(sql, [
+      id, 
+      data.title, 
+      data.description, 
+      data.startingPrice, 
+      data.status || 'active', 
+      data.expiryDate, 
+      data.donorId, 
+      data.organId
+    ]);
+    
+    // Return the created listing
+    return { ...data, id };
+  },
+  
+  // Update a listing
+  update: async (data, condition) => {
+    let updateFields = [];
+    let params = [];
+    
+    // Build the SET part of the query dynamically based on the data
+    if (data.status !== undefined) {
+      updateFields.push('status = ?');
+      params.push(data.status);
+    }
+    
+    if (data.winningBidId !== undefined) {
+      updateFields.push('winningBidId = ?');
+      params.push(data.winningBidId);
+    }
+    
+    if (data.finalPrice !== undefined) {
+      updateFields.push('finalPrice = ?');
+      params.push(data.finalPrice);
+    }
+    
+    if (data.title !== undefined) {
+      updateFields.push('title = ?');
+      params.push(data.title);
+    }
+    
+    if (data.description !== undefined) {
+      updateFields.push('description = ?');
+      params.push(data.description);
+    }
+    
+    if (data.startingPrice !== undefined) {
+      updateFields.push('startingPrice = ?');
+      params.push(data.startingPrice);
+    }
+    
+    if (data.expiryDate !== undefined) {
+      updateFields.push('expiryDate = ?');
+      params.push(data.expiryDate);
+    }
+    
+    // Add updatedAt timestamp
+    updateFields.push('updatedAt = NOW()');
+    
+    // Add the ID to the params array
+    const { id } = condition.where;
+    params.push(id);
+    
+    const sql = `UPDATE listings SET ${updateFields.join(', ')} WHERE id = ?`;
+    await executeQuery(sql, params);
+    
+    // Return the updated listing
+    return [1]; // [affectedRows]
+  }
+};
+
+// Function to initialize database (no schema creation needed as we're using pre-existing tables)
+const initialize = async () => {
+  try {
+    // Just verify that we can connect to the tables
+    await executeQuery('SELECT 1 FROM organs LIMIT 1');
+    await executeQuery('SELECT 1 FROM listings LIMIT 1');
+    console.log('Listing database connection verified successfully');
   } catch (error) {
-    console.error('Error initializing database:', error);
+    console.error('Error verifying database tables:', error);
     throw error;
   }
 };
 
-module.exports = db; 
+module.exports = {
+  Organ,
+  Listing,
+  initialize
+}; 

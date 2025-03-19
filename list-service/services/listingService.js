@@ -1,5 +1,4 @@
 const { Listing, Organ } = require('../models');
-const { Op } = require('sequelize');
 const axios = require('axios');
 
 class ListingService {
@@ -14,7 +13,7 @@ class ListingService {
         where: {
           status: 'active',
           expiryDate: {
-            [Op.lt]: new Date()
+            '[Op.lt]': new Date()
           }
         }
       });
@@ -32,10 +31,12 @@ class ListingService {
             const highestBid = response.data.highestBid;
             
             // Update listing status to completed
-            await listing.update({ 
+            await Listing.update({ 
               status: 'completed',
               winningBidId: highestBid.id,
               finalPrice: highestBid.amount
+            }, {
+              where: { id: listing.id }
             });
             
             // Notify the bidding service about the winning bid
@@ -44,7 +45,9 @@ class ListingService {
             console.log(`Listing ${listing.id} resolved with winning bid ${highestBid.id}`);
           } else {
             // No bids found, mark as expired
-            await listing.update({ status: 'cancelled' });
+            await Listing.update({ status: 'cancelled' }, {
+              where: { id: listing.id }
+            });
             console.log(`Listing ${listing.id} cancelled due to no bids`);
           }
         } catch (error) {
