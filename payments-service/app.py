@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import stripe
 from kafka import KafkaProducer
 import json
@@ -15,6 +16,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+CORS(app) 
 
 # Configure Stripe
 stripe.api_key = os.getenv('STRIPE_API_KEY')
