@@ -563,7 +563,6 @@ def get_listings_with_bids():
                 'time_end': listing['expiryDate'],
                 'start_bid': float(listing['startingPrice']),
                 'status': listing['status'],
-                'donor_id': listing['donorId'],
                 'organ_id': listing['organId'],
                 'current_bid': highest_bid['bid_amt'] if highest_bid else None,
                 'highest_bidder': highest_bid['bidder_id'] if highest_bid else None,

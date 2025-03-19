@@ -14,6 +14,10 @@ yarn-debug.log
 .env.test
 .env.production
 
+# Virtual environments 
+.venv
+*/.venv
+
 # Docker
 docker-compose.override.yml
 
