@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 import uuid
 import logging
 
+
+
 # Load environment variables
 load_dotenv()
 
