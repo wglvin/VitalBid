@@ -1,4 +1,3 @@
-const { v4: uuidv4 } = require('uuid');
 const { executeQuery } = require('../config/database');
 
 // Organ model - direct SQL implementation
@@ -35,12 +34,12 @@ const Organ = {
   
   // Create a new organ
   create: async (data) => {
-    const id = data.id || uuidv4();
-    const sql = 'INSERT INTO organs (id, type, description) VALUES (?, ?, ?)';
-    await executeQuery(sql, [id, data.type, data.description]);
+    const sql = 'INSERT INTO organs (type, description) VALUES (?, ?)';
+    const result = await executeQuery(sql, [data.type, data.description]);
     
-    // Return the created organ
-    return { ...data, id };
+    // Get the newly created organ with auto-incremented ID
+    const newOrgan = await Organ.findByPk(result.insertId);
+    return newOrgan;
   },
   
   // Update an organ
@@ -107,15 +106,13 @@ const Listing = {
   
   // Create a new listing
   create: async (data) => {
-    const id = data.id || uuidv4();
     const sql = `
       INSERT INTO listings 
-      (id, title, description, startingPrice, status, expiryDate, organId, createdAt, updatedAt) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+      (title, description, startingPrice, status, expiryDate, organId, createdAt, updatedAt) 
+      VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
     `;
     
-    await executeQuery(sql, [
-      id, 
+    const result = await executeQuery(sql, [
       data.title, 
       data.description, 
       data.startingPrice, 
@@ -124,8 +121,9 @@ const Listing = {
       data.organId
     ]);
     
-    // Return the created listing
-    return { ...data, id };
+    // Get the newly created listing with auto-incremented ID
+    const newListing = await Listing.findByPk(result.insertId);
+    return newListing;
   },
   
   // Update a listing

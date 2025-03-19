@@ -34,17 +34,30 @@ const apiService = {
   },
 
   async addListing(listingData) {
-    // Remove fields that are no longer in the database
-    const { donorId, winningBidId, finalPrice, ...cleanedData } = listingData;
+    // Transform the data to match what the backend expects
+    const transformedData = {
+      title: listingData.name,
+      description: listingData.description,
+      organId: parseInt(listingData.organ_id), // Convert to number
+      startingPrice: parseFloat(listingData.start_bid), // Convert to number
+      expiryDate: listingData.time_end,
+      status: listingData.status || 'active'
+    };
+    
+    console.log("Data sent to API:", JSON.stringify(transformedData));
     
     const response = await fetch(`${API_BASE_URL}/listing/api/listings`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(cleanedData),
+      body: JSON.stringify(transformedData),
     });
+
     if (!response.ok) {
+      // Get the error message from the response
+      const errorData = await response.text();
+      console.error("API Error:", errorData);
       throw new Error("Failed to add listing");
     }
     return await response.json();

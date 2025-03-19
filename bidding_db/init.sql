@@ -2,8 +2,8 @@ USE bidding_db;
 
 -- Create the bids table that matches the structure used in the application
 CREATE TABLE IF NOT EXISTS bids (
-    id VARCHAR(36) PRIMARY KEY,
-    listingId VARCHAR(36) NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    listingId INT NOT NULL,
     bidderId VARCHAR(36) NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
     status ENUM('pending', 'active', 'accepted', 'rejected', 'cancelled') DEFAULT 'active',
