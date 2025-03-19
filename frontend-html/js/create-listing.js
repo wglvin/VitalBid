@@ -42,7 +42,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 name: document.getElementById('listing-name').value,
                 description: document.getElementById('listing-description').value,
                 organ_id: document.getElementById('organ-id').value,
-                donor_id: document.getElementById('donor-id').value,
                 start_bid: parseFloat(document.getElementById('starting-bid').value),
                 time_end: new Date(document.getElementById('expiry-date').value).toISOString(),
                 status: "active"
@@ -56,11 +55,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (!listingData.organ_id) {
                 showError('Please select an organ');
-                return;
-            }
-            
-            if (!listingData.donor_id) {
-                showError('Please enter a donor ID');
                 return;
             }
             

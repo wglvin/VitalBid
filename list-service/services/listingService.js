@@ -28,21 +28,17 @@ class ListingService {
           const response = await axios.get(`${biddingServiceUrl}/api/bids/highest/${listing.id}`);
           
           if (response.data && response.data.highestBid) {
-            const highestBid = response.data.highestBid;
-            
             // Update listing status to completed
             await Listing.update({ 
-              status: 'completed',
-              winningBidId: highestBid.id,
-              finalPrice: highestBid.amount
+              status: 'completed'
             }, {
               where: { id: listing.id }
             });
             
             // Notify the bidding service about the winning bid
-            await axios.post(`${biddingServiceUrl}/api/bids/${highestBid.id}/accept`);
+            await axios.post(`${biddingServiceUrl}/api/bids/${response.data.highestBid.id}/accept`);
             
-            console.log(`Listing ${listing.id} resolved with winning bid ${highestBid.id}`);
+            console.log(`Listing ${listing.id} resolved with winning bid ${response.data.highestBid.id}`);
           } else {
             // No bids found, mark as expired
             await Listing.update({ status: 'cancelled' }, {

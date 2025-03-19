@@ -36,7 +36,7 @@ const Organ = {
   // Create a new organ
   create: async (data) => {
     const id = data.id || uuidv4();
-    const sql = 'INSERT INTO organs (id, type, description, createdAt, updatedAt) VALUES (?, ?, ?, NOW(), NOW())';
+    const sql = 'INSERT INTO organs (id, type, description) VALUES (?, ?, ?)';
     await executeQuery(sql, [id, data.type, data.description]);
     
     // Return the created organ
@@ -48,7 +48,7 @@ const Organ = {
     const { type, description } = data;
     const { id } = condition.where;
     
-    const sql = 'UPDATE organs SET type = ?, description = ?, updatedAt = NOW() WHERE id = ?';
+    const sql = 'UPDATE organs SET type = ?, description = ? WHERE id = ?';
     await executeQuery(sql, [type, description, id]);
     
     // Return the updated organ count
@@ -110,8 +110,8 @@ const Listing = {
     const id = data.id || uuidv4();
     const sql = `
       INSERT INTO listings 
-      (id, title, description, startingPrice, status, expiryDate, donorId, organId, createdAt, updatedAt) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+      (id, title, description, startingPrice, status, expiryDate, organId, createdAt, updatedAt) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     `;
     
     await executeQuery(sql, [
@@ -121,7 +121,6 @@ const Listing = {
       data.startingPrice, 
       data.status || 'active', 
       data.expiryDate, 
-      data.donorId, 
       data.organId
     ]);
     
@@ -138,16 +137,6 @@ const Listing = {
     if (data.status !== undefined) {
       updateFields.push('status = ?');
       params.push(data.status);
-    }
-    
-    if (data.winningBidId !== undefined) {
-      updateFields.push('winningBidId = ?');
-      params.push(data.winningBidId);
-    }
-    
-    if (data.finalPrice !== undefined) {
-      updateFields.push('finalPrice = ?');
-      params.push(data.finalPrice);
     }
     
     if (data.title !== undefined) {

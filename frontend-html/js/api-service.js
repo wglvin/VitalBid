@@ -8,7 +8,14 @@ const apiService = {
     if (!response.ok) {
       throw new Error("Failed to fetch listings");
     }
-    return await response.json();
+    const listings = await response.json();
+    return listings.map(listing => ({
+      ...listing,
+      // Add default values for removed fields
+      donorId: listing.donorId || null,
+      winningBidId: listing.winningBidId || null,
+      finalPrice: listing.finalPrice || null
+    }));
   },
 
   async getListingById(listingId) {
@@ -16,16 +23,26 @@ const apiService = {
     if (!response.ok) {
       throw new Error("Failed to fetch listing");
     }
-    return await response.json();
+    const listing = await response.json();
+    return {
+      ...listing,
+      // Add default values for removed fields
+      donorId: listing.donorId || null,
+      winningBidId: listing.winningBidId || null,
+      finalPrice: listing.finalPrice || null
+    };
   },
 
   async addListing(listingData) {
+    // Remove fields that are no longer in the database
+    const { donorId, winningBidId, finalPrice, ...cleanedData } = listingData;
+    
     const response = await fetch(`${API_BASE_URL}/listing/api/listings`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(listingData),
+      body: JSON.stringify(cleanedData),
     });
     if (!response.ok) {
       throw new Error("Failed to add listing");
@@ -41,7 +58,14 @@ const apiService = {
       console.error("Error fetching organs:", response.status, await response.text());
       throw new Error("Failed to fetch organs");
     }
-    return await response.json();
+    // Process response to ensure consistent format even if createdAt/updatedAt are missing
+    const organs = await response.json();
+    return organs.map(organ => ({
+      ...organ,
+      // Add empty defaults for any code that might expect these fields
+      createdAt: organ.createdAt || null,
+      updatedAt: organ.updatedAt || null
+    }));
   },
 
   async getOrganById(organId) {
@@ -49,16 +73,25 @@ const apiService = {
     if (!response.ok) {
       throw new Error("Failed to fetch organ");
     }
-    return await response.json();
+    const organ = await response.json();
+    // Add empty defaults for any code that might expect these fields
+    return {
+      ...organ,
+      createdAt: organ.createdAt || null,
+      updatedAt: organ.updatedAt || null
+    };
   },
 
   async addOrgan(organData) {
+    // Remove createdAt and updatedAt if they exist in the input
+    const { createdAt, updatedAt, ...cleanedData } = organData;
+    
     const response = await fetch(`${API_BASE_URL}/listing/api/organs`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(organData),
+      body: JSON.stringify(cleanedData),
     });
     if (!response.ok) {
       throw new Error("Failed to add organ");
