@@ -18,6 +18,12 @@ const Bid = {
         params.push(options.where.listingId);
       }
       
+      // Add status filter if present
+      if (options.where.status) {
+        whereClauses.push('status = ?');
+        params.push(options.where.status);
+      }
+      
       if (whereClauses.length) {
         sql += ' WHERE ' + whereClauses.join(' AND ');
       }
@@ -41,6 +47,51 @@ const Bid = {
     return executeQuery(sql, params);
   },
   
+  // Find one bid matching conditions
+  findOne: async (options = {}) => {
+    let sql = 'SELECT * FROM bids';
+    const params = [];
+    
+    // Handle where condition if present
+    if (options.where) {
+      const whereClauses = [];
+      
+      // Add listingId filter if present
+      if (options.where.listingId) {
+        whereClauses.push('listingId = ?');
+        params.push(options.where.listingId);
+      }
+      
+      // Add status filter if present
+      if (options.where.status) {
+        whereClauses.push('status = ?');
+        params.push(options.where.status);
+      }
+      
+      // Add id filter if present
+      if (options.where.id) {
+        whereClauses.push('id = ?');
+        params.push(options.where.id);
+      }
+      
+      if (whereClauses.length) {
+        sql += ' WHERE ' + whereClauses.join(' AND ');
+      }
+    }
+    
+    // Handle order if present
+    if (options.order && options.order.length) {
+      const [field, direction] = options.order[0];
+      sql += ` ORDER BY ${field} ${direction}`;
+    }
+    
+    // Limit to 1 result
+    sql += ' LIMIT 1';
+    
+    const results = await executeQuery(sql, params);
+    return results.length ? results[0] : null;
+  },
+  
   // Find bid by primary key (id)
   findByPk: async (id) => {
     const sql = 'SELECT * FROM bids WHERE id = ?';
@@ -53,8 +104,8 @@ const Bid = {
     const id = data.id || uuidv4();
     const sql = `
       INSERT INTO bids 
-      (id, listingId, bidderId, amount, status, createdAt, updatedAt) 
-      VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+      (id, listingId, bidderId, amount, status, bidTime, createdAt, updatedAt) 
+      VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
     `;
     
     await executeQuery(sql, [
@@ -62,7 +113,8 @@ const Bid = {
       data.listingId, 
       data.bidderId, 
       data.amount, 
-      data.status || 'pending'
+      data.status || 'active',
+      data.bidTime || new Date()
     ]);
     
     // Return the created bid
@@ -101,7 +153,7 @@ const Bid = {
   
   // Find the highest bid for a listing
   findHighestBid: async (listingId) => {
-    const sql = 'SELECT * FROM bids WHERE listingId = ? ORDER BY amount DESC LIMIT 1';
+    const sql = 'SELECT * FROM bids WHERE listingId = ? AND status = "active" ORDER BY amount DESC LIMIT 1';
     const results = await executeQuery(sql, [listingId]);
     return results.length ? results[0] : null;
   }

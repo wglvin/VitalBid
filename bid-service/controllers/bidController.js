@@ -1,5 +1,4 @@
 const { Bid } = require('../models');
-const { Op } = require('sequelize');
 const axios = require('axios');
 
 // Create a new bid
@@ -52,13 +51,7 @@ exports.createBid = async (req, res) => {
     }
     
     // Get highest bid for this listing
-    const highestBid = await Bid.findOne({
-      where: { 
-        listingId,
-        status: 'active'
-      },
-      order: [['amount', 'DESC']]
-    });
+    const highestBid = await Bid.findHighestBid(listingId);
     
     // Check if new bid is higher than current highest bid
     if (highestBid && parseFloat(amount) <= parseFloat(highestBid.amount)) {
@@ -68,10 +61,7 @@ exports.createBid = async (req, res) => {
       });
     }
     
-    // Check if bidder is bidding on their own listing
-    if (bidderId === listing.donorId) {
-      return res.status(400).json({ message: 'Cannot bid on your own listing' });
-    }
+    // We no longer need to check if the bidder is bidding on their own listing since donorId is removed
     
     // Create new bid
     const bid = await Bid.create({
@@ -138,13 +128,7 @@ exports.getBidsByListing = async (req, res) => {
 exports.getHighestBidForListing = async (req, res) => {
   try {
     const listingId = req.params.listingId;
-    const highestBid = await Bid.findOne({
-      where: { 
-        listingId,
-        status: 'active'
-      },
-      order: [['amount', 'DESC']]
-    });
+    const highestBid = await Bid.findHighestBid(listingId);
     
     if (!highestBid) {
       return res.status(200).json({ message: 'No bids found for this listing', highestBid: null });
@@ -172,23 +156,26 @@ exports.acceptBid = async (req, res) => {
     }
     
     // Update this bid to accepted
-    await bid.update({ status: 'accepted' });
+    await Bid.update({ status: 'accepted' }, { where: { id: bidId } });
     
     // Update all other bids for this listing to rejected
-    await Bid.update(
-      { status: 'rejected' },
-      {
-        where: {
-          listingId: bid.listingId,
-          id: { [Op.ne]: bidId },
-          status: 'active'
-        }
-      }
-    );
+    // We need to create a custom query for this since we don't have Op.ne
+    const updateOtherBidsSQL = `
+      UPDATE bids 
+      SET status = 'rejected', updatedAt = NOW() 
+      WHERE listingId = ? AND id != ? AND status = 'active'
+    `;
+    
+    // Execute custom query using the database module
+    const { executeQuery } = require('../config/database');
+    await executeQuery(updateOtherBidsSQL, [bid.listingId, bidId]);
+    
+    // Get the updated bid
+    const updatedBid = await Bid.findByPk(bidId);
     
     return res.status(200).json({ 
       message: 'Bid accepted successfully', 
-      bid 
+      bid: updatedBid
     });
   } catch (error) {
     console.error('Error accepting bid:', error);
@@ -218,11 +205,14 @@ exports.cancelBid = async (req, res) => {
     }
     
     // Update bid status to cancelled
-    await bid.update({ status: 'cancelled' });
+    await Bid.update({ status: 'cancelled' }, { where: { id: bidId } });
+    
+    // Get the updated bid
+    const updatedBid = await Bid.findByPk(bidId);
     
     return res.status(200).json({ 
       message: 'Bid cancelled successfully', 
-      bid 
+      bid: updatedBid
     });
   } catch (error) {
     console.error('Error cancelling bid:', error);
