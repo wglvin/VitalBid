@@ -147,6 +147,20 @@ services:
     # volumes:
     #   - ./frontend-html:/usr/share/nginx/html:ro
 
+  notification:
+    build: ./notification
+    container_name: notification
+    ports:
+      - "3003:3000"  # Changed port to 3003 to avoid conflict with bid-service on 3002
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./notification:/app
+      - /app/node_modules
+    networks:
+      - organ_network  # Changed to match the defined network name
+    restart: unless-stopped
+
 networks:
   organ_network:
     driver: bridge
