@@ -83,6 +83,7 @@ services:
       DB_NAME: bidding_db
       NODE_ENV: ${NODE_ENV:-development}
       BIDDING_SERVICE_URL: http://bid-service:3002
+      LISTING_SERVICE_URL: http://list-service:3001
     ports:
       - "3002:3002"
     networks:
@@ -128,22 +129,24 @@ services:
     networks:
       - organ_network
 
-   # Frontend Application
+  # Frontend Application (HTML-based)
   frontend:
-    build: ./frontend-logic
+    build: ./frontend-html
     container_name: frontend
     restart: always
     depends_on:
       - view-listing-bids-service
+      - bid-service
+      - list-service
+      - kong
     ports:
-      - "3000:3000"  # Next.js default port
+      - "3000:3000"
     networks:
       - organ_network
-    volumes:
-      - ./frontend-logic:/app
-      - /app/node_modules
-      - /app/.next
-      
+    # For development, you can uncomment this volume to make instant changes without rebuilding
+    # volumes:
+    #   - ./frontend-html:/usr/share/nginx/html:ro
+
 networks:
   organ_network:
     driver: bridge

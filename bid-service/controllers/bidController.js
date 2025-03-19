@@ -18,7 +18,7 @@ exports.createBid = async (req, res) => {
     }
     
     // Get listing details from listing service
-    const listingServiceUrl = process.env.LISTING_SERVICE_URL || 'http://listing-service:3001';
+    const listingServiceUrl = process.env.LISTING_SERVICE_URL;
     const listingResponse = await axios.get(`${listingServiceUrl}/api/listings/${listingId}`);
     const listing = listingResponse.data;
     
