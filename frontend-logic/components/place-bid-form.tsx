@@ -54,14 +54,17 @@ export function PlaceBidForm({
 
     try {
       setSubmitting(true)
-      await apiService.placeBid(listingId, bidAmount)
+      await apiService.placeBid({
+        listingId,
+        bidderId: 1, // This should come from your auth system
+        amount: bidAmount
+      })
 
       toast({
         title: "Bid placed successfully!",
         description: `Your bid of $${bidAmount.toLocaleString()} has been placed.`,
       })
 
-      // Refresh the page to show the new bid
       window.location.reload()
     } catch (error) {
       console.error("Error placing bid:", error)

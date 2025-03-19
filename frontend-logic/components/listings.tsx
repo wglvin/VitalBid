@@ -10,14 +10,19 @@ import { ListingDetails } from "@/components/listing-details"
 import { apiService } from "@/lib/api-service"
 
 export type Listing = {
-  listing_id: number
-  name: string
-  time_end: string
-  start_bid: number
-  bid_inc: number
+  id: number
+  title: string
+  description: string
+  startingPrice: number
+  expiryDate: string
+  donorId: number
+  organId: number
   status: string
-  current_bid?: number
-  bids_count?: number
+  organ?: {
+    id: number
+    type: string
+    description: string
+  }
 }
 
 export function Listings() {
@@ -30,7 +35,11 @@ export function Listings() {
     const fetchListings = async () => {
       try {
         const data = await apiService.getAllListings()
-        setListings(data)
+        setListings(data.map(listing => ({
+          ...listing,
+          startingPrice: listing.startingPrice || 0,
+          status: listing.status.toUpperCase()
+        })))
       } catch (error) {
         console.error("Failed to fetch listings:", error)
       } finally {
@@ -80,7 +89,7 @@ export function Listings() {
             <p className="text-center py-8">No listings available</p>
           ) : (
             listings.map((listing) => (
-              <ListingCard key={listing.listing_id} listing={listing} onViewDetails={handleViewDetails} />
+              <ListingCard key={listing.id} listing={listing} onViewDetails={handleViewDetails} />
             ))
           )}
         </TabsContent>
@@ -92,7 +101,7 @@ export function Listings() {
             listings
               .filter((l) => l.status === "ACTIVE")
               .map((listing) => (
-                <ListingCard key={listing.listing_id} listing={listing} onViewDetails={handleViewDetails} />
+                <ListingCard key={listing.id} listing={listing} onViewDetails={handleViewDetails} />
               ))
           )}
         </TabsContent>
@@ -104,7 +113,7 @@ export function Listings() {
             listings
               .filter((l) => l.status === "ENDED")
               .map((listing) => (
-                <ListingCard key={listing.listing_id} listing={listing} onViewDetails={handleViewDetails} />
+                <ListingCard key={listing.id} listing={listing} onViewDetails={handleViewDetails} />
               ))
           )}
         </TabsContent>
@@ -115,47 +124,41 @@ export function Listings() {
 
 function ListingCard({ listing, onViewDetails }: { listing: Listing; onViewDetails: (id: number) => void }) {
   const isActive = listing.status === "ACTIVE"
-  const timeRemaining = isActive ? getTimeRemaining(listing.time_end) : null
+  const timeRemaining = isActive ? getTimeRemaining(listing.expiryDate) : null
 
   return (
     <Card>
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle>{listing.name}</CardTitle>
-            <CardDescription>ID: {listing.listing_id}</CardDescription>
+            <CardTitle>{listing.title}</CardTitle>
+            <CardDescription>ID: {listing.id}</CardDescription>
           </div>
-          <Badge variant={isActive ? "default" : "secondary"}>{isActive ? "Active" : "Ended"}</Badge>
+          <Badge variant={isActive ? "default" : "secondary"}>
+            {isActive ? "Active" : "Ended"}
+          </Badge>
         </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-muted-foreground">Starting Bid</p>
-            <p className="font-medium">${listing.start_bid.toLocaleString()}</p>
+            <p className="text-sm text-muted-foreground">Starting Price</p>
+            <p className="font-medium">${listing.startingPrice.toLocaleString()}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Current Bid</p>
-            <p className="font-medium">${(listing.current_bid || listing.start_bid).toLocaleString()}</p>
+            <p className="text-sm text-muted-foreground">Organ Type</p>
+            <p className="font-medium">{listing.organ?.type || 'N/A'}</p>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Bid Increment</p>
-            <p className="font-medium">${listing.bid_inc.toLocaleString()}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Bids</p>
-            <p className="font-medium">{listing.bids_count || 0}</p>
-          </div>
+          {timeRemaining && (
+            <div className="col-span-2">
+              <p className="text-sm text-muted-foreground">Time Remaining</p>
+              <p className="font-medium">{timeRemaining}</p>
+            </div>
+          )}
         </div>
-        {timeRemaining && (
-          <div className="mt-4">
-            <p className="text-sm text-muted-foreground">Time Remaining</p>
-            <p className="font-medium">{timeRemaining}</p>
-          </div>
-        )}
       </CardContent>
       <CardFooter>
-        <Button onClick={() => onViewDetails(listing.listing_id)} className="w-full">
+        <Button onClick={() => onViewDetails(listing.id)} className="w-full">
           View Details
         </Button>
       </CardFooter>

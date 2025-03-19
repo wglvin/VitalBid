@@ -13,12 +13,27 @@ import { ProofSection } from "@/components/proof-section"
 import { apiService } from "@/lib/api-service"
 import type { Listing } from "@/components/listings"
 
-type ListingWithBids = Listing & {
+type ListingWithBids = {
+  id: number
+  title: string
+  description: string
+  startingPrice: number
+  expiryDate: string
+  donorId: number
+  organId: number
+  status: string
+  organ?: {
+    id: number
+    type: string
+    description: string
+  }
   bids: Array<{
-    bid_id: number
-    listing_id: number
-    time_placed: string
-    bid_amt: number
+    id: number           // Changed from bid_id
+    listingId: number    // Changed from listing_id
+    bidderId: number     // Added to match backend
+    amount: number       // Changed from bid_amt
+    bidTime: string      // Changed from time_placed
+    status: string       // Added to match backend
   }>
   proof?: {
     proof_id: number
@@ -49,13 +64,17 @@ export function ListingDetails({
       try {
         setLoading(true)
         const listingData = await apiService.getListingById(listingId)
-        const bidsData = await apiService.getListingBids(listingId)
+        const bidsData = await apiService.getBidsByListing(listingId)
         const proofData = await apiService.getListingProof(listingId).catch(() => null)
         const imageProofData = await apiService.getImageProof(listingId).catch(() => null)
 
         setListing({
           ...listingData,
-          bids: bidsData,
+          bids: bidsData.map(bid => ({
+            ...bid,
+            amount: bid.amount,
+            bidTime: bid.bidTime
+          })),
           proof: proofData,
           image_proof: imageProofData,
         })
@@ -91,7 +110,7 @@ export function ListingDetails({
   }
 
   const isActive = listing.status === "ACTIVE"
-  const highestBid = listing.bids.length > 0 ? Math.max(...listing.bids.map((b) => b.bid_amt)) : listing.start_bid
+  const highestBid = listing.bids.length > 0 ? Math.max(...listing.bids.map((b) => b.amount)) : listing.startingPrice
 
   return (
     <div className="w-full max-w-4xl">
@@ -105,8 +124,8 @@ export function ListingDetails({
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-2xl">{listing.name}</CardTitle>
-                  <CardDescription>ID: {listing.listing_id}</CardDescription>
+                  <CardTitle className="text-2xl">{listing.title}</CardTitle>
+                  <CardDescription>ID: {listing.id}</CardDescription>
                 </div>
                 <Badge variant={isActive ? "default" : "secondary"}>{isActive ? "Active" : "Ended"}</Badge>
               </div>
@@ -117,7 +136,7 @@ export function ListingDetails({
                   <DollarSign className="h-5 w-5 mr-2 text-muted-foreground" />
                   <div>
                     <p className="text-sm text-muted-foreground">Starting Bid</p>
-                    <p className="font-medium">${listing.start_bid.toLocaleString()}</p>
+                    <p className="font-medium">${listing.startingPrice.toLocaleString()}</p>
                   </div>
                 </div>
                 <div className="flex items-center">
@@ -131,7 +150,7 @@ export function ListingDetails({
                   <Clock className="h-5 w-5 mr-2 text-muted-foreground" />
                   <div>
                     <p className="text-sm text-muted-foreground">End Time</p>
-                    <p className="font-medium">{new Date(listing.time_end).toLocaleString()}</p>
+                    <p className="font-medium">{new Date(listing.expiryDate).toLocaleString()}</p>
                   </div>
                 </div>
                 <div className="flex items-center">
@@ -154,14 +173,14 @@ export function ListingDetails({
               <BidHistory bids={listing.bids} />
             </TabsContent>
             <TabsContent value="proof" className="mt-4">
-              <ProofSection listingId={listing.listing_id} proof={listing.proof} imageProof={listing.image_proof} />
+              <ProofSection listingId={listing.id} proof={listing.proof} imageProof={listing.image_proof} />
             </TabsContent>
           </Tabs>
         </div>
 
         <div>
           {isActive && (
-            <PlaceBidForm listingId={listing.listing_id} currentBid={highestBid} minIncrement={listing.bid_inc} />
+            <PlaceBidForm listingId={listing.id} currentBid={highestBid} minIncrement={listing.bids[0].amount - listing.startingPrice} />
           )}
         </div>
       </div>

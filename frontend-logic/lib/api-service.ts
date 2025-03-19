@@ -1,13 +1,24 @@
 // lib/api-service.ts
 // API service to interact with the backend through Kong API Gateway
-
 const API_BASE_URL = "http://localhost:8000"
 
+interface ApiService {
+  getAllListings(): Promise<any>;
+  getListingById(listingId: number): Promise<any>;
+  addListing(listingData: any): Promise<any>;
+  getAllOrgans(): Promise<any>;
+  getOrganById(organId: string): Promise<any>;
+  addOrgan(organData: any): Promise<any>;
+  getListingBids(listingId: number): Promise<any>;
+  placeBid(listingId: number, bidderId: number, bidAmount: number): Promise<any>;
+  getListingsWithBids(): Promise<any>;
+  getListingProof(listingId: number): Promise<any>;
+}
 
-export const apiService = {
+export const apiService: ApiService = {
   // List Service
   async getAllListings() {
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/listings/all_listing`)
+    const response = await fetch(`${API_BASE_URL}/listing/api/listings`)
     if (!response.ok) {
       throw new Error("Failed to fetch listings")
     }
@@ -15,7 +26,7 @@ export const apiService = {
   },
 
   async getListingById(listingId: number) {
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/listings/get_listing/${listingId}`)
+    const response = await fetch(`${API_BASE_URL}/listing/api/listings/${listingId}`)
     if (!response.ok) {
       throw new Error("Failed to fetch listing")
     }
@@ -23,7 +34,7 @@ export const apiService = {
   },
 
   async addListing(listingData: any) {
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/listings/add_listing`, {
+    const response = await fetch(`${API_BASE_URL}/listing/api/listings`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -38,8 +49,8 @@ export const apiService = {
 
   // Organ Service
   async getAllOrgans() {
-    console.log("Fetching organs from:", `${API_BASE_URL}/get_listing_bids/api/organs/all`); // Add this log
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/organs/all`)
+    console.log("Fetching organs from:", `${API_BASE_URL}/listing/api/organs`); // Add this log
+    const response = await fetch(`${API_BASE_URL}/listing/api/organs`)
     if (!response.ok) {
       console.error("Error fetching organs:", response.status, await response.text()); // Add this log
       throw new Error("Failed to fetch organs")
@@ -48,7 +59,7 @@ export const apiService = {
   },
 
   async getOrganById(organId: string) {
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/organs/${organId}`)
+    const response = await fetch(`${API_BASE_URL}/listing/api/organs/${organId}`)
     if (!response.ok) {
       throw new Error("Failed to fetch organ")
     }
@@ -56,7 +67,7 @@ export const apiService = {
   },
 
   async addOrgan(organData: any) {
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/organs/add`, {
+    const response = await fetch(`${API_BASE_URL}/listing/api/organs`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -78,15 +89,17 @@ export const apiService = {
     return await response.json()
   },
 
-  async placeBid(listingId: number, bidAmount: number) {
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/bidding/add_bid`, {
+  async placeBid(listingId: number,bidderId: number, bidAmount: number) {
+    const response = await fetch(`${API_BASE_URL}/bidding/api/bidding`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         listing_id: listingId,
+        bidderid: bidderId,
         bid_amt: bidAmount,
+
       }),
     })
     if (!response.ok) {
@@ -94,7 +107,6 @@ export const apiService = {
     }
     return await response.json()
   },
-
   async getListingsWithBids() {
     const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/listings-with-bids`)
     if (!response.ok) {
@@ -108,44 +120,6 @@ export const apiService = {
     const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/proof/get_proof/listing/${listingId}`)
     if (!response.ok) {
       throw new Error("Failed to fetch proof")
-    }
-    return await response.json()
-  },
-
-  async getImageProof(listingId: number) {
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/proof/get_proof/image/${listingId}`)
-    if (!response.ok) {
-      throw new Error("Failed to fetch image proof")
-    }
-    return await response.json()
-  },
-
-  async uploadProof(listingId: number, file: File) {
-    const formData = new FormData()
-    formData.append("listing_id", listingId.toString())
-    formData.append("proof_file", file)
-
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/proof/upload_proof`, {
-      method: "POST",
-      body: formData,
-    })
-    if (!response.ok) {
-      throw new Error("Failed to upload proof")
-    }
-    return await response.json()
-  },
-
-  async uploadImageProof(listingId: number, file: File) {
-    const formData = new FormData()
-    formData.append("listing_id", listingId.toString())
-    formData.append("image_file", file)
-
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/proof/upload_image_proof`, {
-      method: "POST",
-      body: formData,
-    })
-    if (!response.ok) {
-      throw new Error("Failed to upload image proof")
     }
     return await response.json()
   },

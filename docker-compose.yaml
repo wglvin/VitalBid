@@ -83,6 +83,7 @@ services:
       DB_NAME: bidding_db
       NODE_ENV: ${NODE_ENV:-development}
       BIDDING_SERVICE_URL: http://bid-service:3002
+      LISTING_SERVICE_URL: http://list-service:3001
     ports:
       - "3002:3002"
     networks:
