@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // ID cell
             const idCell = document.createElement('td');
             idCell.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500';
-            idCell.textContent = organ.id ? `${organ.id.substring(0, 8)}...` : '';
+            idCell.textContent = organ.id;
             idCell.title = organ.id;
             
             // Append cells to row

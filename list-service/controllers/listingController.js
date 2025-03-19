@@ -40,7 +40,8 @@ exports.getListingById = async (req, res) => {
 // Create new listing
 exports.createListing = async (req, res) => {
   try {
-    const { title, description, startingPrice, expiryDate, organId } = req.body;
+    console.log(req.body)
+    const { title, description, organId, startingPrice, expiryDate, status} = req.body;
     
     // Validate required fields
     if (!title || !startingPrice || !expiryDate || !organId) {
@@ -71,7 +72,7 @@ exports.createListing = async (req, res) => {
       startingPrice,
       expiryDate: expiry,
       organId,
-      status: 'active'
+      status
     });
     
     return res.status(201).json(listing);

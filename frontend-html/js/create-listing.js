@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await apiService.addListing(listingData);
             
             // Redirect to the listing page
-            window.location.href = `listing-details.html?id=${response.listing_id}`;
+            window.location.href = `listing-details.html?id=${response.id}`;
         } catch (error) {
             console.error('Error creating listing:', error);
             showError(error.message || 'Failed to create listing');
