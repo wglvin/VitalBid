@@ -147,12 +147,12 @@ const apiService = {
     return await response.json();
   },
 
-  // Proofing Service
-  async getListingProof(listingId) {
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/proof/get_proof/listing/${listingId}`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch proof");
-    }
-    return await response.json();
-  }
+  // // Proofing Service
+  // async getListingProof(listingId) {
+  //   const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/proof/get_proof/listing/${listingId}`);
+  //   if (!response.ok) {
+  //     throw new Error("Failed to fetch proof");
+  //   }
+  //   return await response.json();
+  // }
 }; 
