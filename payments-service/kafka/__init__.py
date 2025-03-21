@@ -1,0 +1,1 @@
+# Make the kafka directory a proper Python package 

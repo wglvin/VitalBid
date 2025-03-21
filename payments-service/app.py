@@ -1,13 +1,17 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import stripe
-from kafka import KafkaProducer
 import json
 import os
+import sys
 from dotenv import load_dotenv
-import uuid
 import logging
 import datetime
+
+# Add the payments-service directory to the Python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Import the Kafka functions
+from kafka.kafkaProducer import publish_successful_bid, publish_bid_update
 
 # python -m http.server 8000
 
@@ -24,55 +28,9 @@ CORS(app)
 # Configure Stripe
 stripe.api_key = os.getenv('STRIPE_API_KEY')
 
-# Configure Kafka
-kafka_bootstrap_servers = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
-kafka_topic = os.getenv('KAFKA_BID_TOPIC', 'successful-bids')
-kafka_bid_updates_topic = os.getenv('KAFKA_BID_UPDATES_TOPIC', 'bid-updates')
-
-# Initialize Kafka producer
-try:
-    producer = KafkaProducer(
-        bootstrap_servers=kafka_bootstrap_servers,
-        value_serializer=lambda v: json.dumps(v).encode('utf-8')
-    )
-    logger.info("Kafka producer initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize Kafka producer: {str(e)}")
-    producer = None
-
 # In-memory storage for payment intents and bids (would be a database in production)
 payment_intents = {}
 bids = {}  # Store bid information
-
-def publish_to_kafka(topic, event_type, data):
-    """
-    Publish an event to Kafka with proper error handling
-    Returns True if successful, False otherwise
-    """
-    if not producer:
-        logger.warning("Kafka producer not available, skipping event publishing")
-        return False
-    
-    try:
-        event_data = {
-            'event_id': str(uuid.uuid4()),
-            'event_type': event_type,
-            'timestamp': datetime.datetime.now().isoformat(),
-            **data
-        }
-        
-        # Send to Kafka and get the future result
-        future = producer.send(topic, event_data)
-        # Wait for the result to ensure it was sent
-        record_metadata = future.get(timeout=10)
-        
-        logger.info(f"Published {event_type} event to Kafka: topic={record_metadata.topic}, "
-                   f"partition={record_metadata.partition}, offset={record_metadata.offset}")
-        return True
-        
-    except Exception as kafka_error:
-        logger.error(f"Failed to publish {event_type} event to Kafka: {str(kafka_error)}")
-        return False
 
 @app.route('/v1/payment_intents', methods=['POST'])
 def create_payment_intent():
@@ -165,7 +123,8 @@ def confirm_payment_intent(payment_intent_id):
                     'metadata': intent.metadata
                 }
                 
-                event_published = publish_to_kafka(kafka_topic, 'successful_bid', event_data)
+                # Use the simplified Kafka producer
+                event_published = publish_successful_bid(event_data)
             else:
                 logger.warning(f"Bid ID missing, couldn't publish event for payment: {payment_intent_id}")
             
@@ -187,6 +146,55 @@ def confirm_payment_intent(payment_intent_id):
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         logger.error(f"Error confirming payment intent: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/v1/bids/<bid_id>/update', methods=['POST'])
+def update_bid_status(bid_id):
+    """Update a bid's status and publish the event to Kafka"""
+    try:
+        data = request.json
+        new_status = data.get('status')
+        payment_intent_id = data.get('payment_intent_id')
+        
+        if not new_status:
+            return jsonify({'error': 'Status is required'}), 400
+            
+        # Find associated payment intent if provided
+        payment_data = {}
+        if payment_intent_id:
+            try:
+                intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+                payment_data = {
+                    'payment_intent_id': payment_intent_id,
+                    'payment_status': intent.status,
+                    'amount': intent.amount / 100 if hasattr(intent, 'amount') else None,
+                    'currency': intent.currency if hasattr(intent, 'currency') else None
+                }
+            except Exception as e:
+                logger.warning(f"Failed to retrieve payment intent {payment_intent_id}: {str(e)}")
+        
+        # Prepare event data
+        event_data = {
+            'bid_id': bid_id,
+            'previous_status': data.get('previous_status'),
+            'new_status': new_status,
+            'updated_by': data.get('updated_by'),
+            'reason': data.get('reason'),
+            **payment_data,
+            'additional_data': data.get('additional_data', {})
+        }
+        
+        # Use simplified Kafka producer
+        event_published = publish_bid_update(event_data)
+        
+        return jsonify({
+            'bid_id': bid_id,
+            'status': new_status,
+            'event_published': event_published
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error updating bid status: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/v1/bids/<bid_id>', methods=['GET'])
@@ -235,56 +243,12 @@ def health_check():
     return jsonify({'status': 'healthy'}), 200
 
 
-@app.route('/v1/bids/<bid_id>/update', methods=['POST'])
-def update_bid_status(bid_id):
-    """Update a bid's status and publish the event to Kafka"""
-    try:
-        data = request.json
-        new_status = data.get('status')
-        payment_intent_id = data.get('payment_intent_id')
-        
-        if not new_status:
-            return jsonify({'error': 'Status is required'}), 400
-            
-        # Find associated payment intent if provided
-        payment_data = {}
-        if payment_intent_id:
-            try:
-                intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-                payment_data = {
-                    'payment_intent_id': payment_intent_id,
-                    'payment_status': intent.status,
-                    'amount': intent.amount / 100 if hasattr(intent, 'amount') else None,
-                    'currency': intent.currency if hasattr(intent, 'currency') else None
-                }
-            except Exception as e:
-                logger.warning(f"Failed to retrieve payment intent {payment_intent_id}: {str(e)}")
-        
-        # Prepare event data
-        event_data = {
-            'bid_id': bid_id,
-            'previous_status': data.get('previous_status'),
-            'new_status': new_status,
-            'updated_by': data.get('updated_by'),
-            'reason': data.get('reason'),
-            **payment_data,
-            'additional_data': data.get('additional_data', {})
-        }
-        
-        # Publish event to Kafka
-        event_published = publish_to_kafka(kafka_bid_updates_topic, 'bid_status_update', event_data)
-        
-        return jsonify({
-            'bid_id': bid_id,
-            'status': new_status,
-            'event_published': event_published
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error updating bid status: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
+    # Explicitly set port to 5001 regardless of environment variable
+    port = 5001
+    logger.info(f"Starting Flask app on port {port}")
+    # Use debug=True to see more detailed errors
     app.run(host='0.0.0.0', port=port)
+else:
+    # Log if the file is being imported rather than run directly
+    logger.warning("This script is being imported, not run directly. The Flask app will not start automatically.")
