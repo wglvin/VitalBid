@@ -158,9 +158,6 @@ services:
     networks:
       - organ_network  # Changed to match the defined network name
     restart: unless-stopped
-    depends_on:
-      - list-service
-      - bid-service
 
 networks:
   organ_network:
