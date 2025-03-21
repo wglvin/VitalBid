@@ -9,7 +9,7 @@ import uuid
 import logging
 import datetime
 
-
+# python -m http.server 8000
 
 # Load environment variables
 load_dotenv()
