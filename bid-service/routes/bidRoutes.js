@@ -24,4 +24,7 @@ router.post('/:id/accept', bidController.acceptBid);
 // PUT cancel a bid
 router.put('/:id/cancel', bidController.cancelBid);
 
+// GET bid history for a listing (new route)
+router.get('/history/:listingId', bidController.getBidHistory);
+
 module.exports = router; 

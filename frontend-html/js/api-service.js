@@ -116,7 +116,7 @@ const apiService = {
 
   // Bid Service
   async getListingBids(listingId) {
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/bidding/get_history/${listingId}`);
+    const response = await fetch(`${API_BASE_URL}/bidding/api/bids/history/${listingId}`);
     if (!response.ok) {
       throw new Error("Failed to fetch bids");
     }

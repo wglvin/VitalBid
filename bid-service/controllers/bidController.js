@@ -174,4 +174,33 @@ exports.cancelBid = async (req, res) => {
     console.error('Error cancelling bid:', error);
     return res.status(500).json({ message: 'Failed to cancel bid', error: error.message });
   }
+};
+
+// Get bid history for a listing
+exports.getBidHistory = async (req, res) => {
+  try {
+    const listingId = req.params.listingId;
+    const bids = await Bid.findAll({
+      where: { listingId },
+      order: [['amount', 'DESC']]
+    });
+
+    // Transform to frontend format
+    const frontendBids = bids.map(bid => ({
+      bid_id: bid.id,
+      listing_id: bid.listingId,
+      bidder_id: bid.bidderId,
+      bid_amt: parseFloat(bid.amount),
+      bid_time: bid.bidTime,
+      status: bid.status
+    }));
+
+    return res.status(200).json(frontendBids);
+  } catch (error) {
+    console.error('Error fetching bid history:', error);
+    return res.status(500).json({ 
+      message: 'Failed to fetch bid history', 
+      error: error.message 
+    });
+  }
 }; 
