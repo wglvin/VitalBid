@@ -47,8 +47,39 @@ const sendNotification = async (userId, message) => {
     }
 };
 
-const sendEmailNotification = async (email, subject, text) => {
+// Function to simulate getting user email from database
+const simulateGetUserEmailFromDatabase = async (userId) => {
+    // This would normally query a database
+    // For demonstration purposes, we'll use a simple object to simulate a database
+    const mockUserDatabase = {
+        '1': 'moses.kng.2023@smu.edu.sg',
+        '2': 'test.user@example.com',
+        '3': 'another.user@example.com'
+    };
+    
+    const email = mockUserDatabase[userId];
+    if (!email) {
+        throw new Error(`User ${userId} not found in database`);
+    }
+    
+    return email;
+};
+
+// Enhanced function to handle both userId and direct email
+const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
     try {
+        // Determine if we have a userId or an email address
+        let email = userIdOrEmail;
+        let userId = null;
+        
+        // Check if this looks like an email address
+        if (!userIdOrEmail.includes('@')) {
+            // If not an email, treat as userId and look up
+            userId = userIdOrEmail;
+            email = await simulateGetUserEmailFromDatabase(userId);
+        }
+        
+        // Send the email
         const data = {
             from: config.mailgun.from,
             to: email,
@@ -57,12 +88,13 @@ const sendEmailNotification = async (email, subject, text) => {
         };
 
         const response = await mg.messages().send(data);
-        console.log(`Email sent to ${email}: ${response.id}`);
+        console.log(`Email sent to ${email}${userId ? ` (user ${userId})` : ''}: ${response.id}`);
         
         // Publish notification sent event to Kafka
         await produceMessage(config.kafka.topics.notifications, {
             type: 'NotificationSent',
             email,
+            userId,
             status: 'success',
             messageId: response.id,
             timestamp: new Date().toISOString()
@@ -70,18 +102,23 @@ const sendEmailNotification = async (email, subject, text) => {
         
         return response;
     } catch (error) {
-        console.error('Failed to send email notification:', error);
+        const errorMsg = userId ? 
+            `Failed to send dynamic email to user ${userId}` : 
+            `Failed to send email to ${userIdOrEmail}`;
+        
+        console.error(errorMsg, error);
         
         // Publish notification failed event to Kafka
         await produceMessage(config.kafka.topics.notifications, {
-            type: 'NotificationFailed',
-            email,
+            type: 'DynamicNotificationFailed',
+            email: userIdOrEmail,
+            userId,
             status: 'error',
             error: error.message,
             timestamp: new Date().toISOString()
         });
         
-        throw new Error('Failed to send email notification');
+        throw new Error(`${errorMsg}: ${error.message}`);
     }
 };
 
@@ -103,7 +140,7 @@ Thank you for using Organ Marketplace!
 Best regards,
 The Organ Marketplace Team`;
 
-        await sendEmailNotification(email, subject, text);
+        await sendDynamicEmailNotification(email, subject, text);
         return { status: 'success', message: 'Listing notification sent' };
     } catch (error) {
         console.error('Error processing listing created event:', error);
@@ -113,6 +150,6 @@ The Organ Marketplace Team`;
 
 module.exports = {
     sendNotification,
-    sendEmailNotification,
+    sendDynamicEmailNotification,
     processListingCreatedEvent
 };
