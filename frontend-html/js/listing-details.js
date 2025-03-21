@@ -167,6 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             // Hardcoded bidder ID for demonstration - in a real app, this would come from user authentication
+            // need to retrieve from user authentication in the future
             const bidderId = 1;
             
             const response = await apiService.placeBid(listingId, bidderId, bidAmount);

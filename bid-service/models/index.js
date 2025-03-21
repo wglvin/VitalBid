@@ -1,4 +1,3 @@
-const { v4: uuidv4 } = require('uuid');
 const { executeQuery } = require('../config/database');
 
 // Bid model - direct SQL implementation
@@ -101,15 +100,13 @@ const Bid = {
   
   // Create a new bid
   create: async (data) => {
-    const id = data.id || uuidv4();
     const sql = `
       INSERT INTO bids 
-      (id, listingId, bidderId, amount, status, bidTime, createdAt, updatedAt) 
-      VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+      (listingId, bidderId, amount, status, bidTime, createdAt, updatedAt) 
+      VALUES (?, ?, ?, ?, ?, NOW(), NOW())
     `;
     
-    await executeQuery(sql, [
-      id, 
+    const result = await executeQuery(sql, [
       data.listingId, 
       data.bidderId, 
       data.amount, 
@@ -117,8 +114,11 @@ const Bid = {
       data.bidTime || new Date()
     ]);
     
-    // Return the created bid
-    return { ...data, id };
+    // Return the created bid with the auto-generated ID
+    return { 
+      id: result.insertId,
+      ...data 
+    };
   },
   
   // Update a bid

@@ -12,65 +12,21 @@ exports.createBid = async (req, res) => {
     }
     
     // Validate bid amount is positive
-    if (amount <= 0) {
+    if (parseFloat(amount) <= 0) {
       return res.status(400).json({ message: 'Bid amount must be greater than zero' });
     }
     
-    // Get listing details from listing service
-    const listingServiceUrl = process.env.LISTING_SERVICE_URL;
-    const listingResponse = await axios.get(`${listingServiceUrl}/api/listings/${listingId}`);
-    const listing = listingResponse.data;
-    
-    // Check if listing exists and is active
-    if (!listing) {
-      return res.status(404).json({ message: 'Listing not found' });
-    }
-    
-    if (listing.status !== 'active') {
-      return res.status(400).json({ 
-        message: `Cannot bid on a listing with status: ${listing.status}`,
-        listing
-      });
-    }
-    
-    // Check if listing has expired
-    const expiryDate = new Date(listing.expiryDate);
-    if (expiryDate < new Date()) {
-      return res.status(400).json({ 
-        message: 'Cannot bid on an expired listing',
-        expiryDate
-      });
-    }
-    
-    // Check if bid amount is greater than starting price
-    if (parseFloat(amount) < parseFloat(listing.startingPrice)) {
-      return res.status(400).json({ 
-        message: `Bid amount must be at least the starting price of ${listing.startingPrice}`,
-        startingPrice: listing.startingPrice
-      });
-    }
-    
-    // Get highest bid for this listing
-    const highestBid = await Bid.findHighestBid(listingId);
-    
-    // Check if new bid is higher than current highest bid
-    if (highestBid && parseFloat(amount) <= parseFloat(highestBid.amount)) {
-      return res.status(400).json({ 
-        message: `Bid amount must be greater than the current highest bid of ${highestBid.amount}`,
-        currentHighestBid: highestBid.amount
-      });
-    }
-    
-    // We no longer need to check if the bidder is bidding on their own listing since donorId is removed
-    
-    // Create new bid
-    const bid = await Bid.create({
-      listingId,
-      bidderId,
-      amount,
+    // Convert types to match database schema
+    const bidData = {
+      listingId: parseInt(listingId),
+      bidderId: parseInt(bidderId), // Convert to integer
+      amount: parseFloat(amount),
       status: 'active',
       bidTime: new Date()
-    });
+    };
+
+    // Create new bid
+    const bid = await Bid.create(bidData);
     
     return res.status(201).json(bid);
   } catch (error) {

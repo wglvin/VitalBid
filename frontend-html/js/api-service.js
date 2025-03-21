@@ -1,4 +1,5 @@
 // API service to interact with the backend through Kong API Gateway
+// to change to env var later
 const API_BASE_URL = "http://localhost:8000";
 
 const apiService = {
@@ -44,6 +45,8 @@ const apiService = {
       status: listingData.status || 'active'
     };
     
+    console.log("Data sent to API:", JSON.stringify(transformedData));
+    
     const response = await fetch(`${API_BASE_URL}/listing/api/listings`, {
       method: "POST",
       headers: {
@@ -53,13 +56,13 @@ const apiService = {
     });
 
     if (!response.ok) {
+      // Get the error message from the response
       const errorData = await response.text();
       console.error("API Error:", errorData);
       throw new Error("Failed to add listing");
     }
     
-    const newListing = await response.json();
-    return newListing; // This will include the correct ID
+    return await response.json();
   },
 
   // Organ Service
@@ -121,19 +124,20 @@ const apiService = {
   },
 
   async placeBid(listingId, bidderId, bidAmount) {
-    const response = await fetch(`${API_BASE_URL}/bidding/api/bidding`, {
+    const response = await fetch(`${API_BASE_URL}/bidding/api/bids`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        listing_id: listingId,
-        bidderid: bidderId,
-        bid_amt: bidAmount,
+        listingId: parseInt(listingId),
+        bidderId: parseInt(bidderId),
+        amount: parseFloat(bidAmount)
       }),
     });
     if (!response.ok) {
-      throw new Error("Failed to place bid");
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to place bid");
     }
     return await response.json();
   },

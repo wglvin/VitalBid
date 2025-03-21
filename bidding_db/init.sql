@@ -4,7 +4,7 @@ USE bidding_db;
 CREATE TABLE IF NOT EXISTS bids (
     id INT AUTO_INCREMENT PRIMARY KEY,
     listingId INT NOT NULL,
-    bidderId VARCHAR(36) NOT NULL,
+    bidderId INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
     status ENUM('pending', 'active', 'accepted', 'rejected', 'cancelled') DEFAULT 'active',
     bidTime DATETIME DEFAULT CURRENT_TIMESTAMP,
