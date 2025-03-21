@@ -45,9 +45,14 @@ document.addEventListener('DOMContentLoaded', function() {
     async function fetchListingDetails() {
         try {
             const listings = await apiService.getListingsWithBids();
-            const listing = listings.find(l => l.listing_id === listingId);
+            console.log('Listings received:', listings);
+            console.log('Looking for listing ID:', listingId);
+            
+            const numericId = parseInt(listingId);
+            const listing = listings.find(l => l.id === numericId || l.listing_id === numericId);
             
             if (!listing) {
+                console.log('No listing found with ID:', numericId);
                 throw new Error('Listing not found');
             }
             

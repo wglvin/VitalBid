@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Submit listing
             const response = await apiService.addListing(listingData);
             
-            // Redirect to the listing page
+            // Redirect to the listing page using the correct ID property
             window.location.href = `listing-details.html?id=${response.id}`;
         } catch (error) {
             console.error('Error creating listing:', error);

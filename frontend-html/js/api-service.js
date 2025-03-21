@@ -38,13 +38,11 @@ const apiService = {
     const transformedData = {
       title: listingData.name,
       description: listingData.description,
-      organId: parseInt(listingData.organ_id), // Convert to number
-      startingPrice: parseFloat(listingData.start_bid), // Convert to number
+      organId: parseInt(listingData.organ_id),
+      startingPrice: parseFloat(listingData.start_bid),
       expiryDate: listingData.time_end,
       status: listingData.status || 'active'
     };
-    
-    console.log("Data sent to API:", JSON.stringify(transformedData));
     
     const response = await fetch(`${API_BASE_URL}/listing/api/listings`, {
       method: "POST",
@@ -55,12 +53,13 @@ const apiService = {
     });
 
     if (!response.ok) {
-      // Get the error message from the response
       const errorData = await response.text();
       console.error("API Error:", errorData);
       throw new Error("Failed to add listing");
     }
-    return await response.json();
+    
+    const newListing = await response.json();
+    return newListing; // This will include the correct ID
   },
 
   // Organ Service
