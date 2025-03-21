@@ -3,14 +3,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const organSelect = document.getElementById('organ-id');
     const formError = document.getElementById('form-error');
     
-    // Set minimum date for expiry date
+    // Set minimum date for expiry date (1 minute from now)
     const expiryDateInput = document.getElementById('expiry-date');
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
     
-    // Format date for datetime-local input
-    const formattedDate = tomorrow.toISOString().slice(0, 16);
-    expiryDateInput.min = formattedDate;
+    // Get current time in GMT+8
+    const now = new Date();
+    // Convert to GMT+8 by adding 8 hours (8 * 60 * 60 * 1000 milliseconds)
+    const gmt8Offset = 8 * 60 * 60 * 1000;
+    const gmt8Now = new Date(now.getTime() + gmt8Offset);
+    
+    // Set minimum time to 1 minute from now
+    const minExpiryTime = new Date(gmt8Now.getTime() + (1 * 60 * 1000)); // Add 1 minute
+    
+    // Format date for datetime-local input (YYYY-MM-DDTHH:MM)
+    const formattedMinDate = minExpiryTime.toISOString().slice(0, 16);
+    expiryDateInput.min = formattedMinDate;
+    
+    // Set default value to current GMT+8 time + 1 day (common listing duration)
+    const defaultExpiryTime = new Date(gmt8Now.getTime() + (24 * 60 * 60 * 1000)); // Add 1 day
+    const formattedDefaultDate = defaultExpiryTime.toISOString().slice(0, 16);
+    expiryDateInput.value = formattedDefaultDate;
     
     // Load organs for dropdown
     async function loadOrgans() {
@@ -38,12 +50,22 @@ document.addEventListener('DOMContentLoaded', function() {
         hideError();
         
         try {
+            // Get input expiry date
+            const expiryDateValue = document.getElementById('expiry-date').value;
+            const expiryDate = new Date(expiryDateValue);
+            
+            // Verify expiry date is at least 1 minute in the future
+            if (expiryDate <= minExpiryTime) {
+                showError('Expiry time must be at least 1 minute from now.');
+                return;
+            }
+            
             const listingData = {
                 name: document.getElementById('listing-name').value,
                 description: document.getElementById('listing-description').value,
                 organ_id: document.getElementById('organ-id').value,
                 start_bid: parseFloat(document.getElementById('starting-bid').value),
-                time_end: new Date(document.getElementById('expiry-date').value).toISOString(),
+                time_end: expiryDate.toISOString(),
                 status: "active"
             };
             
