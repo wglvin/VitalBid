@@ -28,15 +28,16 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
       MYSQL_DATABASE: bidding_db
+    command: --port=3307  # Make MySQL listen on port 3307
     ports:
-      - "3307:3306"  # Changed port to avoid conflict
+      - "3307:3307"
     volumes:
       - bidding_mysql_data:/var/lib/mysql
       - ./bidding_db/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - organ_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-password}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-password}", "--port=3307"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -47,9 +48,9 @@ services:
     container_name: list_service
     restart: always
     depends_on:
-      - listing-db
+      listing-db:
+        condition: service_healthy
     environment:
-      # DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@listing-db:3306/listing_db
       DB_HOST: listing-db
       DB_PORT: 3306
       DB_USER: root
@@ -66,18 +67,17 @@ services:
       - ./list-service:/app
       - /app/node_modules
 
-
   # Bidding Microservice
   bid-service:
     build: ./bid-service
     container_name: bid_service
     restart: always
     depends_on:
-      - bidding-db
+      bidding-db:
+        condition: service_healthy
     environment:
-      # DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@bidding-db:3306/bidding_db
       DB_HOST: bidding-db
-      DB_PORT: 3306
+      DB_PORT: 3307
       DB_USER: root
       DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       DB_NAME: bidding_db
@@ -91,7 +91,6 @@ services:
     volumes:
       - ./bid-service:/app
       - /app/node_modules
-
 
   # View Listing Bids Composite Microservice (Python)
   view-listing-bids-service:
@@ -128,24 +127,23 @@ services:
       - "8001:8001"  # Kong admin
     networks:
       - organ_network
-
   # Frontend Application (HTML-based)
   frontend:
     build: ./frontend-html
     container_name: frontend
     restart: always
     depends_on:
-      - view-listing-bids-service
-      - bid-service
       - list-service
-      - kong
+      - bid-service
+      - view-listing-bids-service
     ports:
       - "3000:3000"
     networks:
       - organ_network
+
     # For development, you can uncomment this volume to make instant changes without rebuilding
-    # volumes:
-    #   - ./frontend-html:/usr/share/nginx/html:ro
+    volumes:
+      - ./frontend-html:/usr/share/nginx/html:ro
 
   notification:
     build: ./notification
@@ -160,6 +158,9 @@ services:
     networks:
       - organ_network  # Changed to match the defined network name
     restart: unless-stopped
+    depends_on:
+      - list-service
+      - bid-service
 
 networks:
   organ_network:
