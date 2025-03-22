@@ -40,4 +40,34 @@ out/
 .vscode/
 *.swp
 *.swo
-.DS_Store 
+.DS_Store
+
+# Node.js files
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.npm
+*.log
+logs/
+package-lock.json
+
+# Environment variables
+.env
+**/.env
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Notification service specific
+notification/.env
+notification/logs/

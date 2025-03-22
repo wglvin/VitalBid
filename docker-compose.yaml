@@ -153,7 +153,13 @@ services:
     environment:
       - NODE_ENV=production
       - KAFKA_BROKERS=kafka:9092
+      - MAILGUN_API_KEY=${MAILGUN_API_KEY}
+      - MAILGUN_DOMAIN=${MAILGUN_DOMAIN}
+      - EMAIL_FROM=${EMAIL_FROM}
       - DIRECT_NOTIFICATION_URL=http://push-notification-service:3005/send
+      - PUSH_NOTIFICATION_URL=http://push-notification-service:3005/push
+    env_file:
+      - ./notification/.env
     volumes:
       - ./notification:/app
       - /app/node_modules
