@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS bids (
     listingId INT NOT NULL,
     bidderId INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
-    status ENUM('pending', 'active', 'accepted', 'rejected', 'cancelled') DEFAULT 'active',
+    status ENUM('active', 'accepted', 'cancelled') DEFAULT 'active',
     bidTime DATETIME DEFAULT CURRENT_TIMESTAMP,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

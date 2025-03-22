@@ -3,7 +3,7 @@ const cors = require('cors');
 const db = require('./models');
 const listingRoutes = require('./routes/listingRoutes');
 const organRoutes = require('./routes/organRoutes');
-const listingService = require('./services/listingService');
+// const listingService = require('./services/listingService');
 const { testConnection } = require('./config/database');
 
 const app = express();
@@ -35,9 +35,10 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log(`Listing service running on port ${PORT}`);
       
-      // Start the listing resolution scheduler
-      const resolutionIntervalMinutes = process.env.RESOLUTION_INTERVAL_MINUTES || 5;
-      listingService.startResolutionScheduler(parseInt(resolutionIntervalMinutes));
+      // in built resolutionScheduler
+
+      // const resolutionIntervalMinutes = process.env.RESOLUTION_INTERVAL_MINUTES || 5;
+      // listingService.startResolutionScheduler(parseInt(resolutionIntervalMinutes));
     });
   } catch (error) {
     console.error('Failed to start listing service:', error);
@@ -48,13 +49,13 @@ const startServer = async () => {
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
   console.log('Shutting down listing service...');
-  listingService.stopResolutionScheduler();
+  // listingService.stopResolutionScheduler();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   console.log('Shutting down listing service...');
-  listingService.stopResolutionScheduler();
+  // listingService.stopResolutionScheduler();
   process.exit(0);
 });
 
