@@ -39,9 +39,12 @@ const setupKafkaConsumer = async () => {
         });
 
         console.log('Kafka consumer is running');
+        return true;
     } catch (error) {
-        console.error('Error setting up Kafka consumer:', error);
-        throw error;
+        console.warn(`Failed to setup Kafka consumer: ${error.message}`);
+        console.warn('Event-driven notifications will be disabled, but API endpoints will still work');
+        // Don't rethrow, return false instead
+        return false;
     }
 };
 

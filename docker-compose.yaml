@@ -149,15 +149,71 @@ services:
     build: ./notification
     container_name: notification
     ports:
-      - "3003:3000"  # Changed port to 3003 to avoid conflict with bid-service on 3002
+      - "3003:3000"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
+      - KAFKA_BROKERS=kafka:9092
+      - DIRECT_NOTIFICATION_URL=http://push-notification-service:3005/send
     volumes:
       - ./notification:/app
       - /app/node_modules
     networks:
-      - organ_network  # Changed to match the defined network name
+      - organ_network
     restart: unless-stopped
+    depends_on:
+      - kafka
+
+  # Kafka and Zookeeper services
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - organ_network
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "listing-events:1:1,notification-events:1:1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - zookeeper
+    networks:
+      - organ_network
+
+  # For testing purposes only - simple push notification service
+  push-notification-service:
+    image: node:16-alpine
+    container_name: push_notification_service
+    working_dir: /app
+    command: >
+      sh -c "echo 'console.log(\"Starting mock push notification service...\");
+      const express = require(\"express\");
+      const app = express();
+      app.use(express.json());
+      app.post(\"/send\", (req, res) => {
+        console.log(\"Mock push notification sent:\", req.body);
+        res.json({success: true, message: \"Notification sent\", timestamp: new Date()});
+      });
+      app.post(\"/push\", (req, res) => {
+        console.log(\"Mock push notification sent:\", req.body);
+        res.json({success: true, message: \"Push notification sent\", timestamp: new Date()});
+      });
+      app.listen(3005, () => console.log(\"Mock push notification service running on port 3005\"));' > index.js && 
+      npm init -y && 
+      npm install express && 
+      node index.js"
+    ports:
+      - "3005:3005"
+    networks:
+      - organ_network
 
 networks:
   organ_network:

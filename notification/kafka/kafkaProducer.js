@@ -10,16 +10,26 @@ const producer = kafka.producer();
 let isProducerConnected = false;
 
 const connectProducer = async () => {
-    if (!isProducerConnected) {
-        await producer.connect();
-        isProducerConnected = true;
-        console.log('Kafka producer connected');
+    try {
+        if (!isProducerConnected) {
+            await producer.connect();
+            isProducerConnected = true;
+            console.log('Kafka producer connected');
+        }
+    } catch (error) {
+        console.warn(`Failed to connect Kafka producer: ${error.message}`);
+        // Don't throw, allow service to continue without Kafka
     }
 };
 
 const produceMessage = async (topic, message) => {
     try {
         await connectProducer();
+        
+        if (!isProducerConnected) {
+            console.log(`[KAFKA DISABLED] Would have published to topic ${topic}:`, message);
+            return { status: 'skipped', reason: 'kafka_not_connected' };
+        }
         
         await producer.send({
             topic,
@@ -32,9 +42,11 @@ const produceMessage = async (topic, message) => {
         });
         
         console.log(`Message published to topic ${topic}:`, message);
+        return { status: 'success' };
     } catch (error) {
         console.error(`Error producing message to ${topic}:`, error);
-        throw error;
+        // Don't throw, return error info instead
+        return { status: 'error', error: error.message };
     }
 };
 
