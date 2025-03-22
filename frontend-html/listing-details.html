@@ -178,6 +178,13 @@
                 </div>
             </div>
         </div>
+
+        <div id="owner-controls" class="hidden mt-4 bg-yellow-50 p-4 rounded-md border border-yellow-300">
+            <h3 class="text-sm font-medium text-yellow-800">Listing Owner Controls</h3>
+            <p class="mt-1 text-sm text-yellow-700">
+                As the owner of this listing, you can accept bids by clicking the "Accept Bid" button next to each active bid.
+            </p>
+        </div>
     </main>
 
     <template id="bid-item-template">
@@ -186,14 +193,18 @@
                 <p class="bid-amount font-medium"></p>
                 <p class="bid-id text-sm text-gray-500"></p>
             </div>
-            <div class="text-right">
+            <div class="text-right bid-controls-container">
                 <p class="bid-time text-sm text-gray-500"></p>
-                <span class="bid-status px-2 py-1 text-xs font-semibold rounded-full"></span>
+                <div class="flex items-center">
+                    <span class="bid-status px-2 py-1 text-xs font-semibold rounded-full"></span>
+                    <!-- Accept button will be added here for owners -->
+                </div>
             </div>
         </div>
     </template>
 
     <script src="js/api-service.js"></script>
+    <script src="js/countdown-timer.js"></script>
     <script src="js/listing-details.js"></script>
     <script src="js/header-auth.js"></script>
 </body>

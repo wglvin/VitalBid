@@ -108,8 +108,8 @@ const Listing = {
   create: async (data) => {
     const sql = `
       INSERT INTO listings 
-      (title, description, startingPrice, status, expiryDate, organId, createdAt, updatedAt) 
-      VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+      (title, description, startingPrice, status, expiryDate, organId, createdAt, updatedAt, ownerId) 
+      VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)
     `;
     
     const result = await executeQuery(sql, [
@@ -118,7 +118,8 @@ const Listing = {
       data.startingPrice, 
       data.status || 'active', 
       data.expiryDate, 
-      data.organId
+      data.organId,
+      data.ownerId
     ]);
     
     // Get the newly created listing with auto-incremented ID

@@ -41,10 +41,10 @@ exports.getListingById = async (req, res) => {
 exports.createListing = async (req, res) => {
   try {
     console.log(req.body)
-    const { title, description, organId, startingPrice, expiryDate, status} = req.body;
+    const { title, description, organId, startingPrice, expiryDate, status, ownerId} = req.body;
     
     // Validate required fields
-    if (!title || !startingPrice || !expiryDate || !organId) {
+    if (!title || !startingPrice || !expiryDate || !organId || !ownerId) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
     
@@ -72,7 +72,8 @@ exports.createListing = async (req, res) => {
       startingPrice,
       expiryDate: expiry,
       organId,
-      status
+      status,
+      ownerId
     });
     
     return res.status(201).json(listing);

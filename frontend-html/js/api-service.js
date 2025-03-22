@@ -35,34 +35,47 @@ const apiService = {
   },
 
   async addListing(listingData) {
-    // Transform the data to match what the backend expects
-    const transformedData = {
-      title: listingData.name,
-      description: listingData.description,
-      organId: parseInt(listingData.organ_id),
-      startingPrice: parseFloat(listingData.start_bid),
-      expiryDate: listingData.time_end,
-      status: listingData.status || 'active'
-    };
-    
-    console.log("Data sent to API:", JSON.stringify(transformedData));
-    
-    const response = await fetch(`${API_BASE_URL}/listing/api/listings`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(transformedData),
-    });
+    try {
+      // Transform the data to match what the backend expects
+      const transformedData = {
+        title: listingData.name,
+        description: listingData.description,
+        organId: parseInt(listingData.organ_id),
+        startingPrice: parseFloat(listingData.start_bid),
+        expiryDate: listingData.time_end,
+        status: listingData.status || 'active',
+        ownerId: parseInt(listingData.owner_id)
+      };
+      
+      console.log("Data being sent to API:", JSON.stringify(transformedData));
+      
+      const response = await fetch(`${API_BASE_URL}/listing/api/listings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(transformedData),
+      });
 
-    if (!response.ok) {
-      // Get the error message from the response
-      const errorData = await response.text();
-      console.error("API Error:", errorData);
-      throw new Error("Failed to add listing");
+      if (!response.ok) {
+        let errorMessage = "Failed to add listing";
+        try {
+          const errorData = await response.json();
+          console.error("API Error Response:", errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          const errorText = await response.text();
+          console.error("API Error Text:", errorText);
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error("Error in addListing:", error);
+      throw error;
     }
-    
-    return await response.json();
   },
 
   // Organ Service
@@ -158,4 +171,27 @@ const apiService = {
   //   }
   //   return await response.json();
   // }
+
+  acceptBid: async function(bidId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/bidding/api/bids/${bidId}/accept`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        // You might need to include authentication credentials
+        // credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to accept bid');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error in acceptBid:', error);
+      throw error;
+    }
+  }
 }; 

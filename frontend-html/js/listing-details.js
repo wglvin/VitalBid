@@ -41,6 +41,9 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
+    // Add this variable to track if current user is the listing owner
+    let isListingOwner = false;
+    
     // Fetch and display listing details
     async function fetchListingDetails() {
         try {
@@ -103,6 +106,29 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set description
         descriptionElement.textContent = listing.description || 'No description provided';
         
+        // Check if current user is the listing owner
+        const currentUserId = getCurrentUserId();
+        
+        // Debug logging
+        console.log("Listing data:", listing);
+        console.log("Current user ID:", currentUserId);
+        console.log("Listing owner_id:", listing.owner_id);
+        
+        // Check if the listing has an owner_id property and if it matches the current user ID
+        isListingOwner = (listing.owner_id === currentUserId);
+        console.log("Is current user the owner?", isListingOwner);
+        
+        // If user is the listing owner, show accept bid buttons
+        const ownerControls = document.getElementById('owner-controls');
+        if (isListingOwner) {
+            console.log("Showing owner controls");
+            ownerControls.classList.remove('hidden');
+        } else {
+            console.log("Owner controls remain hidden");
+            // For debugging purposes, temporarily force-show the owner controls
+            // ownerControls.classList.remove('hidden'); // Uncomment this for testing
+        }
+        
         // Render bid history
         renderBidHistory(listing.bids);
         
@@ -147,8 +173,56 @@ document.addEventListener('DOMContentLoaded', function() {
             statusElement.textContent = bid.status;
             statusElement.classList.add(`bid-status-${bid.status.toLowerCase()}`);
             
+            // Add accept button for active bids if user is the listing owner
+            if (isListingOwner && bid.status === 'active') {
+                const acceptButton = document.createElement('button');
+                acceptButton.textContent = 'Accept Bid';
+                acceptButton.classList.add('accept-bid-btn', 'ml-2', 'px-2', 'py-1', 'text-xs', 
+                    'bg-green-500', 'text-white', 'rounded', 'hover:bg-green-600');
+                
+                acceptButton.addEventListener('click', async (event) => {
+                    event.preventDefault(); // Prevent default action
+                    try {
+                        console.log("Accepting bid:", bid.bid_id);
+                        await acceptBid(bid.bid_id);
+                        // Refresh the page to show updated statuses
+                        window.location.reload();
+                    } catch (error) {
+                        console.error('Error accepting bid:', error);
+                        showError('Failed to accept bid: ' + error.message);
+                    }
+                });
+                
+                // Find the container to append the button
+                const controlsContainer = clone.querySelector('.bid-controls-container .flex');
+                if (controlsContainer) {
+                    controlsContainer.appendChild(acceptButton);
+                } else {
+                    statusElement.parentNode.appendChild(acceptButton);
+                }
+            }
+            
             bidsList.appendChild(clone);
         });
+    }
+    
+    // Function to accept a bid
+    async function acceptBid(bidId) {
+        try {
+            const response = await apiService.acceptBid(bidId);
+            return response;
+        } catch (error) {
+            console.error('Error accepting bid:', error);
+            throw error;
+        }
+    }
+    
+    // Get current user ID (implement based on your auth system)
+    function getCurrentUserId() {
+        // This should be replaced with your actual auth logic
+        // Example: get user ID from localStorage, session, etc.
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        return user.id || 1;
     }
     
     // Handle submitting a bid

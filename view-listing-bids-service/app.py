@@ -18,11 +18,6 @@ LISTING_SERVICE_URL = os.environ.get('LISTING_SERVICE_URL')
 BIDDING_SERVICE_URL = os.environ.get('BIDDING_SERVICE_URL')
 PORT = int(os.environ.get('PORT', 5001))
 
-# Create a directory for storing proof files
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
-os.makedirs(os.path.join(UPLOAD_FOLDER, 'proofs'), exist_ok=True)
-os.makedirs(os.path.join(UPLOAD_FOLDER, 'images'), exist_ok=True)
-
 # In-memory storage for proofs (in a real app, this would be a database)
 proofs = {}
 image_proofs = {}
@@ -70,121 +65,6 @@ def get_bid_history(listing_id):
     except Exception as e:
         app.logger.error(f"Error fetching bid history: {str(e)}")
         return jsonify({'message': 'Failed to fetch bid history', 'error': str(e)}), 500
-
-# @app.route('/api/proof/get_proof/listing/<listing_id>', methods=['GET'])
-# def get_listing_proof(listing_id):
-#     """Get proof document for a listing."""
-#     try:
-#         if listing_id not in proofs:
-#             return jsonify({'message': 'No proof found for this listing'}), 404
-        
-#         return jsonify(proofs[listing_id])
-        
-#     except Exception as e:
-#         app.logger.error(f"Error fetching proof: {str(e)}")
-#         return jsonify({'message': 'Failed to fetch proof', 'error': str(e)}), 500
-
-# @app.route('/api/proof/get_proof/image/<listing_id>', methods=['GET'])
-# def get_image_proof(listing_id):
-#     """Get image proof for a listing."""
-#     try:
-#         if listing_id not in image_proofs:
-#             return jsonify({'message': 'No image proof found for this listing'}), 404
-        
-#         return jsonify(image_proofs[listing_id])
-        
-#     except Exception as e:
-#         app.logger.error(f"Error fetching image proof: {str(e)}")
-#         return jsonify({'message': 'Failed to fetch image proof', 'error': str(e)}), 500
-
-# @app.route('/api/proof/upload_proof', methods=['POST'])
-# def upload_proof():
-#     """Upload a proof document for a listing."""
-#     try:
-#         listing_id = request.form.get('listing_id')
-#         if not listing_id:
-#             return jsonify({'message': 'Listing ID is required'}), 400
-        
-#         if 'proof_file' not in request.files:
-#             return jsonify({'message': 'No file part'}), 400
-            
-#         file = request.files['proof_file']
-        
-#         if file.filename == '':
-#             return jsonify({'message': 'No selected file'}), 400
-            
-#         if file:
-#             filename = secure_filename(f"{listing_id}_{file.filename}")
-#             file_path = os.path.join(UPLOAD_FOLDER, 'proofs', filename)
-#             file.save(file_path)
-            
-#             # Generate hash of the file contents
-#             file_hash = hashlib.sha256(open(file_path, 'rb').read()).hexdigest()
-            
-#             # Create proof record
-#             proof = {
-#                 'proof_id': str(uuid.uuid4()),
-#                 'listing_id': listing_id,
-#                 'proof_hash': file_hash,
-#                 'upload_time': datetime.now().isoformat(),
-#                 'verified': False  # Initially not verified
-#             }
-            
-#             # Store in memory
-#             proofs[listing_id] = proof
-            
-#             return jsonify(proof), 201
-        
-#         return jsonify({'message': 'Error processing file'}), 500
-        
-#     except Exception as e:
-#         app.logger.error(f"Error uploading proof: {str(e)}")
-#         return jsonify({'message': 'Failed to upload proof', 'error': str(e)}), 500
-
-# @app.route('/api/proof/upload_image_proof', methods=['POST'])
-# def upload_image_proof():
-#     """Upload an image proof for a listing."""
-#     try:
-#         listing_id = request.form.get('listing_id')
-#         if not listing_id:
-#             return jsonify({'message': 'Listing ID is required'}), 400
-        
-#         if 'image_file' not in request.files:
-#             return jsonify({'message': 'No file part'}), 400
-            
-#         file = request.files['image_file']
-        
-#         if file.filename == '':
-#             return jsonify({'message': 'No selected file'}), 400
-            
-#         if file:
-#             filename = secure_filename(f"{listing_id}_{file.filename}")
-#             file_path = os.path.join(UPLOAD_FOLDER, 'images', filename)
-#             file.save(file_path)
-            
-#             # Create image proof record
-#             image_proof = {
-#                 'image_id': str(uuid.uuid4()),
-#                 'listing_id': listing_id,
-#                 'image_url': f"/api/proof/images/{filename}",  # URL to access the image
-#                 'upload_time': datetime.now().isoformat()
-#             }
-            
-#             # Store in memory
-#             image_proofs[listing_id] = image_proof
-            
-#             return jsonify(image_proof), 201
-        
-#         return jsonify({'message': 'Error processing image'}), 500
-        
-#     except Exception as e:
-#         app.logger.error(f"Error uploading image proof: {str(e)}")
-#         return jsonify({'message': 'Failed to upload image proof', 'error': str(e)}), 500
-
-# @app.route('/api/proof/images/<filename>', methods=['GET'])
-# def get_image(filename):
-#     """Serve uploaded images."""
-#     return send_from_directory(os.path.join(UPLOAD_FOLDER, 'images'), filename)
 
 
 def calculate_bid_stats(bids):
@@ -260,6 +140,7 @@ def get_listings_with_bids():
                 'start_bid': float(listing['startingPrice']),
                 'status': listing['status'],
                 'organ_id': listing['organId'],
+                'owner_id': listing['ownerId'],
                 'current_bid': highest_bid['bid_amt'] if highest_bid else None,
                 'highest_bidder': highest_bid['bidder_id'] if highest_bid else None,
                 'bids_count': len(formatted_bids),

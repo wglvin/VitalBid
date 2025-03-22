@@ -99,7 +99,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 organ_id: document.getElementById('organ-id').value,
                 start_bid: parseFloat(document.getElementById('starting-bid').value),
                 time_end: timeEndISO,
-                status: "active"
+                status: "active",
+                owner_id: 1  // Hardcoded owner_id for now
             };
             
             console.log("Submitting listing data:", listingData);

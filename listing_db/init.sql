@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS listings (
     startingPrice DECIMAL(10, 2) NOT NULL,
     status ENUM('active', 'pending', 'completed', 'cancelled') DEFAULT 'active',
     expiryDate DATETIME NOT NULL,
+    ownerId INT NOT NULL,
     organId INT NOT NULL,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
