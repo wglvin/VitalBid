@@ -1,4 +1,3 @@
-
 require('dotenv').config({ path: './.env' });
 const axios = require('axios');
 const mailgun = require('mailgun-js');
@@ -9,10 +8,6 @@ const RETRY_DELAY = process.env.RETRY_DELAY || 2000; // 2 seconds
 
 const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN });
 
-const express = require('express');
-const app = express();
-
-const PORT = process.env.PORT || 3000;
 const DB_CONNECTION_STRING = process.env.DB_CONNECTION_STRING;
 
 // Sleep function to wait between retries
@@ -134,8 +129,11 @@ async function testMailgun() {
 
 // Run tests
 testNotifications();
-testMailgun();
+if (process.env.TEST_MAILGUN === 'true') {
+  testMailgun();
+}
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// Add note about how to run tests
+console.log('\nℹ️ NOTE: This is a test script only. To run the actual notification service:');
+console.log('  - In Docker: docker-compose up -d notification');
+console.log('  - Locally: node index.js');

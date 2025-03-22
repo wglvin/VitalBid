@@ -1,14 +1,9 @@
 const axios = require('axios');
-const mailgun = require('mailgun-js');
 const config = require('../config/config');
 const { produceMessage } = require('../kafka/kafkaProducer');
 const Notification = require('../models/notificationModel');
 
-const mg = mailgun({
-    apiKey: config.mailgun.apiKey,
-    domain: config.mailgun.domain
-});
-
+// sendNotification function remains unchanged
 const sendNotification = async (userId, message) => {
     try {
         // Create a notification model instance
@@ -82,7 +77,7 @@ const simulateGetUserEmailFromDatabase = async (userId) => {
     return email;
 };
 
-// Enhanced function to handle both userId and direct email
+// Updated function to exactly match the Python example structure
 const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
     let email = userIdOrEmail;
     let userId = null;
@@ -95,40 +90,70 @@ const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
             email = await simulateGetUserEmailFromDatabase(userId);
         }
         
-        // Send the email
-        const data = {
-            from: config.mailgun.from,
-            to: email,
-            subject: subject,
-            text: text
-        };
-
-        const response = await mg.messages().send(data);
-        console.log(`Email sent to ${email}${userId ? ` (user ${userId})` : ''}: ${response.id}`);
+        // For testing, override with the specified email if in test mode
+        const testMode = process.env.TEST_MODE === 'true';
+        if (testMode) {
+            email = 'moses.kng.2023@smu.edu.sg';
+            console.log(`[TEST MODE] Overriding recipient email to: ${email}`);
+        }
+        
+        // Use the Python-style exact API call to Mailgun
+        const mailgunUrl = `https://api.mailgun.net/v3/${config.mailgun.domain}/messages`;
+        
+        // Create form data exactly as in the Python example
+        const formData = new URLSearchParams();
+        formData.append('from', config.mailgun.from);
+        formData.append('to', email);
+        formData.append('subject', subject);
+        formData.append('text', text);
+        
+        console.log(`Sending email to ${email} via ${mailgunUrl}`);
+        
+        // Make the API call exactly as in Python example
+        const response = await axios.post(
+            mailgunUrl,
+            formData,
+            {
+                auth: {
+                    username: 'api',
+                    password: config.mailgun.apiKey
+                }
+            }
+        );
+        
+        console.log(`Email sent successfully to ${email}: ${JSON.stringify(response.data)}`);
         
         // Try to publish to Kafka but don't fail if it doesn't work
         await produceMessage(config.kafka.topics.notifications, {
             type: 'NotificationSent',
             email,
-            userId: userId || null,  // Ensure userId is always defined
+            userId: userId || null,
             status: 'success',
-            messageId: response.id,
+            messageId: response.data.id,
             timestamp: new Date().toISOString()
         }).catch(err => console.warn('Kafka publish failed:', err.message));
         
-        return response;
+        return response.data;
     } catch (error) {
         const errorMsg = userId ? 
             `Failed to send dynamic email to user ${userId}` : 
             `Failed to send email to ${email}`;
         
-        console.error(errorMsg, error);
+        console.error(errorMsg);
+        
+        // Log detailed error information
+        if (error.response) {
+            console.error('Mailgun API error status:', error.response.status);
+            console.error('Mailgun API error data:', error.response.data);
+        } else {
+            console.error('Error details:', error.message);
+        }
         
         // Try to publish to Kafka but don't fail if it doesn't work
         await produceMessage(config.kafka.topics.notifications, {
             type: 'DynamicNotificationFailed',
             email: email,
-            userId: userId || null,  // Ensure userId is always defined
+            userId: userId || null,
             status: 'error',
             error: error.message,
             timestamp: new Date().toISOString()

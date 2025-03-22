@@ -1,15 +1,23 @@
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config(); // Load from local .env file
 const axios = require('axios');
-const mailgun = require('mailgun-js');
+
+// Remove direct Mailgun initialization - we'll test via the API
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3003';
 const MAX_RETRIES = process.env.MAX_RETRIES || 3;
 const RETRY_DELAY = process.env.RETRY_DELAY || 2000; // 2 seconds
 
-const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN });
-
 // Sleep function to wait between retries
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Check environment before running
+function checkEnvironment() {
+  // This function only checks that we can run the HTTP tests
+  // Actual API tests will use the credentials configured in the service
+  console.log('Environment Check:');
+  console.log(`- BASE_URL: ${BASE_URL}`);
+  return true;
+}
 
 // Function to check if service is available
 const checkServiceAvailable = async () => {
@@ -24,6 +32,10 @@ const checkServiceAvailable = async () => {
 // Test function with retry logic
 async function testNotifications() {
   console.log('--- Testing Notification Service ---');
+  
+  if (!checkEnvironment()) {
+    return;
+  }
   
   // Check if service is available
   console.log('Checking if notification service is available...');
@@ -104,27 +116,10 @@ To start the service:
     console.error('1. Check if notification service is running');
     console.error('2. Verify the service is listening on port 3000 inside the container');
     console.error('3. Ensure port mapping is correct in docker-compose.yaml (3003:3000)');
-    console.error('4. Try accessing the service directly in a browser at http://localhost:3003/health');
-  }
-}
-
-// Function to send a test email using Mailgun
-async function testMailgun() {
-  const data = {
-    from: process.env.EMAIL_FROM,
-    to: 'moses.kng.2023@smu.edu.sg',
-    subject: 'Hello',
-    text: 'Testing some Mailgun awesomeness!'
-  };
-
-  try {
-    const body = await mg.messages().send(data);
-    console.log('Mailgun Test Email Sent:', body);
-  } catch (error) {
-    console.error('Mailgun Test Email Failed:', error);
+    console.error('4. Check environment variables for Mailgun are properly set in .env and docker-compose');
+    console.error('5. Try accessing the service directly in a browser at http://localhost:3003/health');
   }
 }
 
 // Run tests
 testNotifications();
-testMailgun();

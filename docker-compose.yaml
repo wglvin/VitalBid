@@ -158,8 +158,7 @@ services:
       - EMAIL_FROM=${EMAIL_FROM}
       - DIRECT_NOTIFICATION_URL=http://push-notification-service:3005/send
       - PUSH_NOTIFICATION_URL=http://push-notification-service:3005/push
-    env_file:
-      - ./notification/.env
+      - TEST_MODE=true
     volumes:
       - ./notification:/app
       - /app/node_modules
@@ -199,23 +198,9 @@ services:
     image: node:16-alpine
     container_name: push_notification_service
     working_dir: /app
-    command: >
-      sh -c "echo 'console.log(\"Starting mock push notification service...\");
-      const express = require(\"express\");
-      const app = express();
-      app.use(express.json());
-      app.post(\"/send\", (req, res) => {
-        console.log(\"Mock push notification sent:\", req.body);
-        res.json({success: true, message: \"Notification sent\", timestamp: new Date()});
-      });
-      app.post(\"/push\", (req, res) => {
-        console.log(\"Mock push notification sent:\", req.body);
-        res.json({success: true, message: \"Push notification sent\", timestamp: new Date()});
-      });
-      app.listen(3005, () => console.log(\"Mock push notification service running on port 3005\"));' > index.js && 
-      npm init -y && 
-      npm install express && 
-      node index.js"
+    command: sh -c "npm install && npm start"
+    volumes:
+      - ./mock-notification-service:/app
     ports:
       - "3005:3005"
     networks:
