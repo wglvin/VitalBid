@@ -84,11 +84,10 @@ const simulateGetUserEmailFromDatabase = async (userId) => {
 
 // Enhanced function to handle both userId and direct email
 const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
+    let email = userIdOrEmail;
+    let userId = null;
+    
     try {
-        // Determine if we have a userId or an email address
-        let email = userIdOrEmail;
-        let userId = null;
-        
         // Check if this looks like an email address
         if (!userIdOrEmail.includes('@')) {
             // If not an email, treat as userId and look up
@@ -111,7 +110,7 @@ const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
         await produceMessage(config.kafka.topics.notifications, {
             type: 'NotificationSent',
             email,
-            userId,
+            userId: userId || null,  // Ensure userId is always defined
             status: 'success',
             messageId: response.id,
             timestamp: new Date().toISOString()
@@ -121,15 +120,15 @@ const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
     } catch (error) {
         const errorMsg = userId ? 
             `Failed to send dynamic email to user ${userId}` : 
-            `Failed to send email to ${userIdOrEmail}`;
+            `Failed to send email to ${email}`;
         
         console.error(errorMsg, error);
         
         // Try to publish to Kafka but don't fail if it doesn't work
         await produceMessage(config.kafka.topics.notifications, {
             type: 'DynamicNotificationFailed',
-            email: userIdOrEmail,
-            userId,
+            email: email,
+            userId: userId || null,  // Ensure userId is always defined
             status: 'error',
             error: error.message,
             timestamp: new Date().toISOString()

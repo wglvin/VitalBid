@@ -1,4 +1,5 @@
-require('dotenv').config({ path: '../.env' });
+
+require('dotenv').config({ path: './.env' });
 const axios = require('axios');
 const mailgun = require('mailgun-js');
 
@@ -7,6 +8,12 @@ const MAX_RETRIES = process.env.MAX_RETRIES || 3;
 const RETRY_DELAY = process.env.RETRY_DELAY || 2000; // 2 seconds
 
 const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: process.env.MAILGUN_DOMAIN });
+
+const express = require('express');
+const app = express();
+
+const PORT = process.env.PORT || 3000;
+const DB_CONNECTION_STRING = process.env.DB_CONNECTION_STRING;
 
 // Sleep function to wait between retries
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -128,3 +135,7 @@ async function testMailgun() {
 // Run tests
 testNotifications();
 testMailgun();
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
