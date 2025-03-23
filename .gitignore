@@ -13,7 +13,6 @@ yarn-debug.log
 .env.development
 .env.test
 .env.production
-.env.example
 
 # Virtual environments 
 .venv
