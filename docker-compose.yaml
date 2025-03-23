@@ -41,6 +41,26 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  resolving-db:
+    image: mysql:8.0
+    container_name: resolving_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      MYSQL_DATABASE: resolving_db
+    command: --port=3308  # Make MySQL listen on port 3308
+    ports:
+      - "3308:3308"
+    volumes:
+      - resolving_mysql_data:/var/lib/mysql
+      - ./resolving_db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - organ_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-password}", "--port=3308"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Listing Microservice
   list-service:
@@ -90,6 +110,31 @@ services:
       - organ_network
     volumes:
       - ./bid-service:/app
+      - /app/node_modules
+
+  # Bidding Microservice
+  resolve-service:
+    build: ./resolve-service
+    container_name: resolve_service
+    restart: always
+    depends_on:
+      resolving-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: resolving-db
+      DB_PORT: 3308
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      DB_NAME: resolving_db
+      NODE_ENV: ${NODE_ENV:-development}
+      BIDDING_SERVICE_URL: http://bid-service:3002
+      LISTING_SERVICE_URL: http://list-service:3001
+    ports:
+      - "3004:3004"
+    networks:
+      - organ_network
+    volumes:
+      - ./resolve-service:/app
       - /app/node_modules
 
   # View Listing Bids Composite Microservice (Python)
@@ -213,3 +258,4 @@ networks:
 volumes:
   listing_mysql_data:
   bidding_mysql_data:
+  resolving_mysql_data:
