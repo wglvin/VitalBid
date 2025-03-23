@@ -124,6 +124,7 @@ Backend Folder: Microservices, each run by flask OR node.js
 ## External Ports in Use
 3001: List Microservice </br>
 3002: Bid Microservice </br>
+3003: Notification Microservice </br>
 3306: List Database </br>
 3307: Bid Database </br>
 5001: View Listing & Bid Service </br>
@@ -153,4 +154,4 @@ When contributing to this project, please follow these commit message guidelines
 ## Troubleshooting Guidelines 
 When unable to use port 3306, use the following command (in case your mysql is running):
 * taskkill /IM mysqld.exe /F 
->>>>>>> Stashed changes
+
