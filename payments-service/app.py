@@ -17,7 +17,6 @@ from kafka_lib.kafkaProducer import publish_successful_bid, publish_bid_update
 
 # Load environment variables
 load_dotenv()
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,8 +52,8 @@ def create_payment_intent():
             currency=currency,
             metadata={'bid_id': bid_id}, 
             confirm=True,
-            payment_method='pm_card_visa'
-
+            payment_method='pm_card_visa', 
+            return_url=f"{request.headers.get('Origin', 'http://localhost:5001')}/payment-complete.html"
         )
         
         # Store payment intent with bid information
