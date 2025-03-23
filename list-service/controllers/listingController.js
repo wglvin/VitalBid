@@ -1,4 +1,5 @@
 const { Listing, Organ } = require('../models');
+const { produceMessage } = require('../kafka/kafkaProducer');
 
 // Get all listings
 exports.getAllListings = async (req, res) => {
@@ -76,6 +77,24 @@ exports.createListing = async (req, res) => {
       ownerId
     });
     
+    // Get email for owner (in a real app, this would fetch from a user service)
+    // For demo purposes, we'll use a mock email
+    const email = `owner${ownerId}@example.com`;
+    
+    // Publish Kafka event for listing creation
+    await produceMessage('ListingCreated', {
+      id: listing.id,
+      title: listing.title,
+      description: listing.description,
+      userId: ownerId,
+      email: email,
+      price: parseFloat(listing.startingPrice),
+      status: listing.status,
+      organId: listing.organId,
+      expiryDate: listing.expiryDate,
+      createdAt: listing.createdAt
+    });
+    
     return res.status(201).json(listing);
   } catch (error) {
     console.error('Error creating listing:', error);
@@ -149,4 +168,4 @@ exports.deleteListing = async (req, res) => {
     console.error('Error deleting listing:', error);
     return res.status(500).json({ message: 'Failed to delete listing', error: error.message });
   }
-}; 
+};

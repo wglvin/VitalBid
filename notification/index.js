@@ -14,7 +14,6 @@ app.get('/', (req, res) => {
         status: 'running',
         message: 'Welcome to the Notification Service',
         endpoints: [
-            '/notify - Send direct notifications',
             '/notify/email - Send email with direct email address',
             '/notify/email/user/:userId - Send email using user ID',
             '/health - Service health check'

@@ -16,9 +16,5 @@ module.exports = {
         apiKey: process.env.MAILGUN_API_KEY,
         domain: process.env.MAILGUN_DOMAIN,
         from: process.env.EMAIL_FROM || 'noreply@example.com'
-    },
-    notificationProviders: {
-        direct: process.env.DIRECT_NOTIFICATION_URL || 'http://push-notification-service:3005/send',
-        push: process.env.PUSH_NOTIFICATION_URL || 'http://push-notification-service:3005/push'
     }
 };

@@ -3,62 +3,6 @@ const config = require('../config/config');
 const { produceMessage } = require('../kafka/kafkaProducer');
 const Notification = require('../models/notificationModel');
 
-// sendNotification function remains unchanged
-const sendNotification = async (userId, message) => {
-    try {
-        // Create a notification model instance
-        const notification = new Notification(userId, 'direct', message);
-        
-        let response;
-        try {
-            // Try to send the notification with 5 sec timeout
-            response = await axios.post(config.notificationProviders.direct, {
-                userId,
-                message
-            }, { timeout: 5000 });
-        } catch (axiosError) {
-            console.warn(`External notification service unreachable: ${axiosError.message}`);
-            console.warn('Using mock response - this is OK for testing');
-            
-            // Send a mock response instead of failing
-            response = {
-                data: {
-                    success: true,
-                    message: 'Notification sent (mock response)',
-                    timestamp: new Date().toISOString(),
-                    mockResponse: true
-                }
-            };
-        }
-        
-        // Update notification status
-        notification.status = 'sent';
-        
-        // Try to publish to Kafka but don't fail if it doesn't work
-        await produceMessage(config.kafka.topics.notifications, {
-            type: 'DirectNotificationSent',
-            userId,
-            status: 'success',
-            timestamp: new Date().toISOString()
-        }).catch(err => console.warn('Kafka publish failed:', err.message));
-        
-        return response.data;
-    } catch (error) {
-        console.error('Failed to send direct notification:', error);
-        
-        // Try to publish to Kafka but don't fail if it doesn't work
-        await produceMessage(config.kafka.topics.notifications, {
-            type: 'DirectNotificationFailed',
-            userId,
-            status: 'error',
-            error: error.message,
-            timestamp: new Date().toISOString()
-        }).catch(err => console.warn('Kafka publish failed:', err.message));
-        
-        throw new Error('Failed to send notification');
-    }
-};
-
 // Function to simulate getting user email from database
 const simulateGetUserEmailFromDatabase = async (userId) => {
     // This would normally query a database
@@ -190,7 +134,6 @@ The Organ Marketplace Team`;
 };
 
 module.exports = {
-    sendNotification,
     sendDynamicEmailNotification,
     processListingCreatedEvent
 };

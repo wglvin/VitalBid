@@ -79,6 +79,8 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       LISTING_SERVICE_URL: http://list-service:3001
       RESOLUTION_INTERVAL_MINUTES: 5
+      KAFKA_BROKERS: kafka:9092
+      LISTING_EVENTS_TOPIC: listing-events
     ports:
       - "3001:3001"
     networks:
@@ -201,8 +203,6 @@ services:
       - MAILGUN_API_KEY=${MAILGUN_API_KEY}
       - MAILGUN_DOMAIN=${MAILGUN_DOMAIN}
       - EMAIL_FROM=${EMAIL_FROM}
-      - DIRECT_NOTIFICATION_URL=http://push-notification-service:3005/send
-      - PUSH_NOTIFICATION_URL=http://push-notification-service:3005/push
       - TEST_MODE=true
     volumes:
       - ./notification:/app
@@ -235,19 +235,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - zookeeper
-    networks:
-      - organ_network
-
-  # For testing purposes only - simple push notification service
-  push-notification-service:
-    image: node:16-alpine
-    container_name: push_notification_service
-    working_dir: /app
-    command: sh -c "npm install && npm start"
-    volumes:
-      - ./mock-notification-service:/app
-    ports:
-      - "3005:3005"
     networks:
       - organ_network
 

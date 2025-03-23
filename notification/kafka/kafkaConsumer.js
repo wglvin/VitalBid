@@ -17,7 +17,7 @@ const setupKafkaConsumer = async () => {
         // Subscribe to the listings topic
         await consumer.subscribe({ 
             topic: config.kafka.topics.listings, 
-            fromBeginning: false 
+            fromBeginning: true  // Changed to true to consume existing messages for testing
         });
         console.log(`Subscribed to topic: ${config.kafka.topics.listings}`);
 
