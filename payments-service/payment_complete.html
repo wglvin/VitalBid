@@ -218,7 +218,7 @@
                 document.getElementById('errorState').style.display = 'none';
                 
                 // Get payment and bid info from server
-                const response = await fetch(`http://localhost:5000/v1/payment_intents/${paymentIntentId}/confirm`, {
+                const response = await fetch(`http://localhost:5001/v1/payment_intents/${paymentIntentId}/confirm`, {
                     method: 'POST'
                 });
                 
@@ -232,7 +232,7 @@
                     document.getElementById('successState').style.display = 'block';
                     
                     // Get bid details
-                    const bidResponse = await fetch(`http://localhost:5000/v1/bids/${data.bid_id}`, {
+                    const bidResponse = await fetch(`http://localhost:5001/v1/bids/${data.bid_id}`, {
                         method: 'GET'
                     });
                     

@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Import the Kafka functions
 from kafka_lib.kafkaProducer import publish_successful_bid, publish_bid_update
 
-# python -m http.server 8000
+
 
 # Load environment variables
 load_dotenv()
@@ -50,8 +50,8 @@ def create_payment_intent():
         intent = stripe.PaymentIntent.create(
             amount=int(amount * 100),  # Stripe expects amount in cents
             currency=currency,
-            metadata={'bid_id': bid_id}, 
-            confirm=True,
+            metadata={'bid_id': bid_id},
+            confirm=True, 
             payment_method='pm_card_visa', 
             return_url=f"{request.headers.get('Origin', 'http://localhost:5001')}/payment-complete.html"
         )

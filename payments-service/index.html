@@ -233,8 +233,10 @@
         <p>Test your payment microservice with mock bids and Stripe payments</p>
     </header>
 
+     <!-- python -m http.server 8000 -->
 
-    
+
+     
     <div class="container">
         <div class="card">
             <h2 class="section-title">Create a Bid</h2>
@@ -406,7 +408,7 @@
             try {
                 addLog(`Creating payment intent for bid: ${selectedBid.id}`);
                 
-                const response = await fetch('http://localhost:5000/v1/payment_intents', {
+                const response = await fetch('http://localhost:5001/v1/payment_intents', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -437,7 +439,7 @@
             try {
                 addLog(`Confirming payment intent: ${paymentIntentId}`);
                 
-                const response = await fetch(`http://localhost:5000/v1/payment_intents/${paymentIntentId}/confirm`, {
+                const response = await fetch(`http://localhost:5001/v1/payment_intents/${paymentIntentId}/confirm`, {
                     method: 'POST'
                 });
                 
