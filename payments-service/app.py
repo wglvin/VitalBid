@@ -11,7 +11,7 @@ import datetime
 # Add the payments-service directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Import the Kafka functions
-from kafka.kafkaProducer import publish_successful_bid, publish_bid_update
+from kafka_lib.kafkaProducer import publish_successful_bid, publish_bid_update
 
 # python -m http.server 8000
 
@@ -51,7 +51,10 @@ def create_payment_intent():
         intent = stripe.PaymentIntent.create(
             amount=int(amount * 100),  # Stripe expects amount in cents
             currency=currency,
-            metadata={'bid_id': bid_id}
+            metadata={'bid_id': bid_id}, 
+            confirm=True,
+            payment_method='pm_card_visa'
+
         )
         
         # Store payment intent with bid information
