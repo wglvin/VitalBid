@@ -23,9 +23,9 @@ services:
           - /get_listing_bids
 
   - name: outsystems-service
-    url: https://your-outsystems-environment.com
+    url: https://personal-rrotlkrf.outsystemscloud.com/UserAuth/rest
     routes:
-      - name: outsystems-route
+      - name: outsystems-auth-route
         paths:
           - /outsystems
         strip_path: true

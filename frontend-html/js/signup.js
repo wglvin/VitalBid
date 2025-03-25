@@ -10,9 +10,8 @@ async function signup() {
     };
     console.log("📦bidder login sent:", payload);
 
-
     try {
-        const response = await fetch("https://personal-rrotlkrf.outsystemscloud.com/UserAuth/rest/CreateUserAPI/register", {
+        const response = await fetch("http://localhost:8000/outsystems/CreateUserAPI/register", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

@@ -10,7 +10,7 @@ async function loginUser() {
     console.log("📦 request Sent:", payload);
 
     try {
-        const response = await fetch("https://personal-rrotlkrf.outsystemscloud.com/UserAuth/rest/LoginUserAPI/Login", {
+        const response = await fetch("http://localhost:8000/outsystems/LoginUserAPI/Login", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
