@@ -1,49 +1,47 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Redirect if already logged in
-    if (localStorage.getItem('isLoggedIn') === 'true') {
-        window.location.href = 'index.html';
-        return;
-    }
-    
-    const loginForm = document.getElementById('login-form');
-    const loginError = document.getElementById('login-error');
-    const loginErrorMessage = document.getElementById('login-error-message');
-    
-    loginForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Hide any previous errors
-        loginError.classList.add('hidden');
-        
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        
-        // Simple validation
-        if (!email || !password) {
-            loginErrorMessage.textContent = 'Please enter both email and password';
-            loginError.classList.remove('hidden');
-            return;
-        }
-        
-        // For demo purposes - simple mock login
-        // In a real app, this would make an API call
-        if (email === 'user@example.com' && password === 'password') {
-            const user = {
-                id: 1,
-                username: 'demouser',
-                email: email
-            };
-            
-            // Store user data in localStorage
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('user', JSON.stringify(user));
-            localStorage.setItem('token', 'mock-jwt-token');
-            
-            // Redirect to home page
-            window.location.href = 'index.html';
+async function loginUser() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    const payload = {
+        username: username,
+        password: password
+    };
+
+    console.log("📦 request Sent:", payload);
+
+    try {
+        const response = await fetch("https://personal-rrotlkrf.outsystemscloud.com/UserAuth/rest/LoginUserAPI/Login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        console.log("🔍 Response:", result);
+
+        if (result.success) {
+            showToast(result.message, "success");
+            // Store token in localStorage (optional for future use)
+            localStorage.setItem("authToken", result.token);
+            setTimeout(() => window.location.href = "../testingRedirect.html", 3500);
         } else {
-            loginErrorMessage.textContent = 'Invalid email or password';
-            loginError.classList.remove('hidden');
+            showToast(result.reason || "Login failed", "warning");
         }
-    });
-}); 
+    } catch (error) {
+        console.error("Login error:", error);
+        showToast("Failed to connect to server.", "danger");
+    }
+}
+
+function showToast(message, type = 'primary') {
+    const toastElement = document.getElementById('toastAlert');
+    const toastBody = document.getElementById('toastMsg');
+
+    toastElement.className = `toast align-items-center text-center fw-bold bg-${type} border rounded border-dark`;
+    toastBody.textContent = message;
+
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+}
