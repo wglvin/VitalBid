@@ -10,6 +10,11 @@ async function signup() {
     };
     console.log("📦bidder login sent:", payload);
 
+    if (!email.includes('@')) {
+        showToast("❌ Invalid Email Entered!", "warning");
+        return;
+    }
+
     try {
         const response = await fetch("http://localhost:8000/outsystems/CreateUserAPI/register", {
             method: "POST",
