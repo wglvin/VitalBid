@@ -7,9 +7,16 @@
 
 <body>
     <h1>You are logged in!</h1>
+    <div id="userData"></div>
     <script>
         const token = localStorage.getItem("authToken");
+        const userData = localStorage.getItem("userData");
         console.log("JWT Token:", token);
+        console.log("User Data:", JSON.parse(userData));
+
+        // Display user data on the page
+        const userDataDiv = document.getElementById("userData");
+        userDataDiv.innerHTML = `<pre>${JSON.stringify(JSON.parse(userData), null, 2)}</pre>`;
     </script>
 </body>
 
