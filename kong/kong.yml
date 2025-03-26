@@ -9,6 +9,7 @@ services:
           - /listing
 
   - name: bid-service
+    # url: http://172.26.12.154:3002
     url: http://bid-service:3002
     routes:
       - name: bid-route

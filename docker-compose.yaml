@@ -20,7 +20,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Bidding Database service
+  # Bidding Database service, comment out if want external
   bidding-db:
     image: mysql:8.0
     container_name: bidding_db
@@ -41,6 +41,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   resolving-db:
     image: mysql:8.0
     container_name: resolving_db
@@ -89,7 +90,7 @@ services:
       - ./list-service:/app
       - /app/node_modules
 
-  # Bidding Microservice
+  # # Bidding Microservice comment out if want external
   bid-service:
     build: ./bid-service
     container_name: bid_service
@@ -105,7 +106,6 @@ services:
       DB_NAME: bidding_db
       NODE_ENV: ${NODE_ENV:-development}
       BIDDING_SERVICE_URL: ${BIDDING_SERVICE_URL}
-      LISTING_SERVICE_URL: ${LISTING_SERVICE_URL}
     ports:
       - "3002:3002"
     networks:
@@ -146,7 +146,6 @@ services:
     restart: always
     depends_on:
       - list-service
-      - bid-service
     environment:
       LISTING_SERVICE_URL: ${LISTING_SERVICE_URL}
       BIDDING_SERVICE_URL: ${BIDDING_SERVICE_URL}
@@ -180,17 +179,13 @@ services:
     container_name: frontend
     restart: always
     depends_on:
-      - list-service
-      - bid-service
       - view-listing-bids-service
+      - list-service
+      - kong
     ports:
       - "3000:3000"
     networks:
       - organ_network
-
-    # For development, you can uncomment this volume to make instant changes without rebuilding
-    volumes:
-      - ./frontend-html:/usr/share/nginx/html:ro
 
   notification:
     build: ./notification
