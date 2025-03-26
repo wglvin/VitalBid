@@ -135,12 +135,16 @@ exports.updateListing = async (req, res) => {
     }
     
     // Update listing
-    await listing.update({
+    await Listing.update({
       title: title || listing.title,
       description: description !== undefined ? description : listing.description,
       startingPrice: startingPrice !== undefined ? startingPrice : listing.startingPrice,
       expiryDate: expiryDate ? expiry : listing.expiryDate,
       status: status || listing.status
+    },{
+      where: {
+        id: listingId
+      }
     });
     
     return res.status(200).json(listing);
