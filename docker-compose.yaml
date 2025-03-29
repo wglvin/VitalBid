@@ -173,12 +173,12 @@ services:
       - KAFKA_BID_TOPIC=successful-bids
       - KAFKA_BID_UPDATES_TOPIC=bid-updates
       - KAFKA_GROUP_ID=payment-service-group
-  ports:
-    - "5002:5001"  # Map to 5002 on host to avoid conflict with view-listing-bids-service
-  networks:
-    - organ_network
-  volumes:
-    - ./payments-service:/app
+    ports:
+      - "5002:5001"  # Map to 5002 on host to avoid conflict with view-listing-bids-service
+    networks:
+      - organ_network
+    volumes:
+      - ./payments-service:/app
 
   kong:
     image: kong:latest
