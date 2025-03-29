@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auction Payment System</title>
+  <script src="https://js.stripe.com/v3/"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600&display=swap">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #f8f9fa;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 480px;
+      width: 100%;
+      padding: 2rem;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+      background: #fff;
+      margin: 20px;
+    }
+    .price-section {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .check-circle {
+      width: 60px;
+      height: 60px;
+      background-color: rgba(255, 108, 108, 0.2);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-right: 1.5rem;
+    }
+    .check-mark {
+      color: #ff6c6c;
+      font-size: 26px;
+      font-weight: bold;
+    }
+    .x-mark {
+      color: #fff;
+      font-size: 26px;
+      font-weight: bold;
+    }
+    .price {
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: #444;
+    }
+    .view-order {
+      display: inline-block;
+      background-color: #fff0f0;
+      color: #ff6c6c;
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      border-radius: 15px;
+      margin-top: 5px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .payment-methods {
+      margin-bottom: 2rem;
+    }
+    .payment-method {
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      background: #fff;
+    }
+    .payment-method-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .payment-method-radio {
+      margin-right: 10px;
+      width: 20px;
+      height: 20px;
+      accent-color: #ff6c6c;
+    }
+    .payment-method-title {
+      font-weight: 600;
+      margin: 0;
+      flex-grow: 1;
+    }
+    .card-icons {
+      display: flex;
+    }
+    .card-icon {
+      margin-left: 8px;
+    }
+    .card-fields {
+      margin-top: 1rem;
+    }
+    label {
+      font-size: 0.75rem;
+      color: #666;
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    .card-row {
+      display: flex;
+      gap: 10px;
+    }
+    .card-row > div {
+      flex: 1;
+    }
+    .save-card {
+      display: flex;
+      align-items: center;
+      margin: 1rem 0;
+    }
+    .save-card input {
+      margin-right: 10px;
+      width: 18px;
+      height: 18px;
+      accent-color: #ff6c6c;
+    }
+    .save-card label {
+      font-size: 0.9rem;
+      margin: 0;
+    }
+    .paypal-section {
+      margin-top: 1.5rem;
+    }
+    .paypal-info {
+      color: #666;
+      font-size: 0.85rem;
+      margin: 0.5rem 0 1.5rem;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 8px;
+    }
+    .place-order {
+      background-color: #ff6c6c;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      padding: 15px;
+      font-size: 1rem;
+      font-weight: 600;
+      width: 100%;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .place-order:hover {
+      background-color: #ff5555;
+    }
+    .branding {
+      text-align: center;
+      margin-top: 2rem;
+      color: #999;
+      font-size: 0.9rem;
+    }
+    #card-element {
+      border: 1px solid #e0e0e0;
+      padding: 12px;
+      border-radius: 8px;
+      background-color: white;
+      margin-bottom: 1rem;
+    }
+    #card-errors {
+      color: #ff6c6c;
+      font-size: 0.8rem;
+      margin-top: -0.5rem;
+      margin-bottom: 1rem;
+    }
+    .test-cards {
+      background-color: #f9f9f9;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1.5rem;
+      border: 1px dashed #e0e0e0;
+      font-size: 0.8rem;
+    }
+    .test-card-item {
+      padding: 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+      background-color: white;
+      border: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="price-section">
+      <div class="check-circle">
+        <span class="check-mark">✓</span>
+      </div>
+      <div>
+        <div class="price">$ <span id="paymentAmount">210.00</span></div>
+        <a href="#" class="view-order" id="viewOrderToggle">View detailed order</a>
+      </div>
+    </div>
+
+     <!-- Order details section (initially hidden) -->
+     <div class="order-details" id="orderDetails">
+        <div class="order-details-row">
+          <div class="order-details-label">Listing ID:
+
+            <div class="order-details-value" id="orderListingId">-</div>
+
+          </div>
+          
+        </div>
+        <div class="order-details-row">
+          <div class="order-details-label">Listing Title:</div>
+          <div class="order-details-value" id="orderListingTitle">-</div>
+        </div>
+        <div class="order-details-row">
+          <div class="order-details-label">Amount:</div>
+          <div class="order-details-value">$ <span id="orderAmount">-</span></div>
+        </div>
+      </div>
+
+    <form id="paymentForm">
+      <div class="payment-methods">
+        <div class="payment-method">
+          <div class="payment-method-header">
+            <input type="radio" name="paymentMethod" id="cardPayment" class="payment-method-radio" checked>
+            <label for="cardPayment" class="payment-method-title">Credit/Debit Card</label>
+            <div class="card-icons">
+              <img src="images/visa_img.png" alt="Visa" width="40" class="card-icon">
+              <img src="images/mastercard_img.png" alt="Mastercard" width="32" class="card-icon">
+            </div>
+          </div>
+          <div class="card-fields">
+            <p style="font-size: 0.85rem; margin: 0 0 15px 0; color: #666;">Pay securely with your Bank Account using Visa or Mastercard</p>
+            
+            <label for="card-element">Card Information</label>
+            <div id="card-element">
+              <!-- Stripe Card Element will be inserted here -->
+            </div>
+            <div id="card-errors" role="alert"></div>
+            
+            <label for="card-name">Name on Card</label>
+            <input type="text" id="card-name" placeholder="Name on Card">
+            
+            <div class="save-card">
+              <input type="checkbox" id="save-card-checkbox">
+              <label for="save-card-checkbox">Save card for future payments</label>
+            </div>
+
+            <!-- <div class="test-cards">
+              <h4 style="margin-top: 0;">Test Cards</h4>
+              <div class="test-card-item">
+                <strong>Successful payment:</strong> 4242 4242 4242 4242
+              </div>
+              <div class="test-card-item">
+                <strong>Payment requires authentication:</strong> 4000 0025 0000 3155
+              </div>
+              <div class="test-card-item">
+                <strong>Payment declined:</strong> 4000 0000 0000 9995
+              </div>
+              <div class="test-card-item">
+                <em>For all test cards, use any future date for expiry, any 3 digits for CVC, and any postal code.</em>
+              </div>
+            </div> -->
+          </div>
+        </div>
+        
+        <!-- <div class="payment-method">
+          <div class="payment-method-header">
+            <input type="radio" name="paymentMethod" id="paypalPayment" class="payment-method-radio">
+            <label for="paypalPayment" class="payment-method-title">PayPal</label>
+            <img src="https://cdn.jsdelivr.net/gh/innovate-technologies/payment-icons@master/SVG/paypal.svg" alt="PayPal" width="32" class="card-icon">
+          </div>
+          <div class="paypal-info">
+            You will be redirected to PayPal website to complete your order securely.
+          </div>
+        </div> -->
+
+
+      </div>
+
+      <button type="submit" class="place-order">Place Order</button>
+    </form>
+    
+  </div>
+
+  <script>
+        // Initialize Stripe with your publishable key
+    const stripe = Stripe('pk_test_51R2REVRoJbU4bIcvlsl3kwcRAEDMEdO6zZ0wAGV9nJhIfpKaJTiyN8rAmvoOXYGl0oXsZDGv3eBP1KEfGqXTCJzT000fu9PlVV');
+    let paymentIntentId = null;
+
+    // Create Stripe Elements
+    const elements = stripe.elements();
+    const cardElement = elements.create('card', {
+    style: {
+        base: {
+        fontSize: '16px',
+        color: '#333',
+        fontFamily: 'Inter, sans-serif',
+        '::placeholder': {
+            color: '#aab7c4',
+        },
+        },
+        invalid: {
+        color: '#ff6c6c',
+        iconColor: '#ff6c6c',
+        },
+    },
+    });
+
+    /**
+     * Parse query parameters from URL
+     * @returns {Object} Object containing listingId, listingTitle, and amount
+     */
+    function getQueryParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        listingId: params.get('listingId'),
+        listingTitle: params.get('listingTitle'),
+        amount: parseFloat(params.get('amount') || '210.00')
+    };
+    }
+
+    /**
+     * Create a payment intent on the server
+     * @param {string} bidId - The ID of the bid/listing
+     * @param {number} amount - The payment amount
+     * @returns {Promise<string>} Promise resolving to payment intent ID
+     */
+    async function createPaymentIntent(bidId, amount) {
+    try {
+        const response = await fetch('http://localhost:5001/v1/payment_intents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, currency: 'usd', bid_id: bidId })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+        throw new Error(data.error || 'Failed to create payment intent');
+        }
+        
+        return data.id;
+    } catch (err) {
+        console.error("Payment intent creation failed:", err);
+        document.getElementById('card-errors').textContent = err.message;
+        return null;
+    }
+    }
+
+    /**
+     * Confirm a card payment with Stripe
+     * @param {string} paymentIntentId - The ID of the payment intent
+     * @param {string} cardholderName - Name of the cardholder
+     */
+    async function confirmPayment(paymentIntentId, cardholderName) {
+    try {
+        const result = await stripe.confirmCardPayment(paymentIntentId, {
+        payment_method: {
+            card: cardElement,
+            billing_details: { 
+            name: cardholderName || 'User' 
+            }
+        }
+        });
+        
+        if (result.error) {
+        // Show error to customer
+        document.getElementById('card-errors').textContent = result.error.message;
+        } else if (result.paymentIntent.status === 'succeeded') {
+        // Payment successful - redirect or show success message
+        alert('Payment successful!');
+        window.location.href = `payment_complete.html?payment_intent=${paymentIntentId}`;
+        }
+    } catch (err) {
+        document.getElementById('card-errors').textContent = err.message;
+    }
+    }
+
+    /**
+     * Handle PayPal payment method
+     */
+    // function handlePayPalPayment() {
+    // alert('Redirecting to PayPal...');
+    // // Implement PayPal redirect logic here
+    // // This would typically involve creating a PayPal order on your server
+    // // and then redirecting the user to the PayPal approval URL
+    // }
+
+    /**
+     * Initialize the payment form
+     */
+    document.addEventListener('DOMContentLoaded', async () => {
+    // Parse URL parameters
+    const { listingId, listingTitle, amount } = getQueryParams();
+    
+    // Update UI with payment information
+    const amountElement = document.getElementById('paymentAmount');
+    if (amountElement) {
+        amountElement.textContent = amount ? amount.toFixed(2) : '210.00';
+    }
+
+    // Populate order details
+    const orderListingIdElement = document.getElementById('orderListingId');
+    if (orderListingIdElement && listingId) {
+        orderListingIdElement.textContent = listingId;
+    }
+    
+    const orderListingTitleElement = document.getElementById('orderListingTitle');
+    if (orderListingTitleElement && listingTitle) {
+        orderListingTitleElement.textContent = listingTitle;
+    }
+    
+    const orderAmountElement = document.getElementById('orderAmount');
+    if (orderAmountElement) {
+        orderAmountElement.textContent = amount ? amount.toFixed(2) : '210.00';
+    }
+
+    // Toggle order details visibility
+    const viewOrderToggle = document.getElementById('viewOrderToggle');
+    const orderDetails = document.getElementById('orderDetails');
+    
+    if (viewOrderToggle && orderDetails) {
+        viewOrderToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const isVisible = orderDetails.style.display === 'block';
+            orderDetails.style.display = isVisible ? 'none' : 'block';
+            viewOrderToggle.textContent = isVisible ? 'View detailed order' : 'Hide order details';
+        });
+    }
+    
+    
+    const itemNameElement = document.getElementById('paymentItemName');
+    if (itemNameElement && listingTitle) {
+        itemNameElement.textContent = listingTitle;
+    }
+    
+    const bidIdElement = document.getElementById('paymentBidId');
+    if (bidIdElement && listingId) {
+        bidIdElement.textContent = listingId;
+    }
+    
+    // Mount the card element
+    const cardElementContainer = document.getElementById('card-element');
+    if (cardElementContainer) {
+        cardElement.mount(cardElementContainer);
+        
+        // Handle card element validation errors
+        cardElement.addEventListener('change', function(event) {
+        const displayError = document.getElementById('card-errors');
+        if (displayError) {
+            displayError.textContent = event.error ? event.error.message : '';
+        }
+        });
+    }
+    
+    // Create payment intent if we have a listing ID
+    if (listingId) {
+        try {
+        paymentIntentId = await createPaymentIntent(listingId, amount || 210.00);
+        } catch (err) {
+        console.error(err);
+        }
+    }
+    
+    // Set up event listeners for payment method selection
+    const paypalRadio = document.getElementById('paypalPayment');
+    if (paypalRadio) {
+        paypalRadio.addEventListener('change', function() {
+        const cardFields = document.querySelector('.card-fields');
+        if (cardFields) {
+            cardFields.style.display = this.checked ? 'none' : 'block';
+        }
+        
+        const paypalInfo = document.querySelector('.paypal-info');
+        if (paypalInfo) {
+            paypalInfo.style.display = this.checked ? 'block' : 'none';
+        }
+        });
+    }
+    
+    // Set up cancel button if it exists
+    const cancelButton = document.getElementById('cancelPaymentBtn');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', function() {
+        window.history.back();
+        });
+    }
+    });
+
+    /**
+     * Handle form submission
+     */
+    const paymentForm = document.getElementById('paymentForm');
+    if (paymentForm) {
+    paymentForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Check which payment method is selected
+        const isPayPal = document.getElementById('paypalPayment')?.checked;
+        
+        if (isPayPal) {
+        handlePayPalPayment();
+        } else {
+        // Handle card payment
+        const nameOnCardElement = document.getElementById('card-name');
+        const nameOnCard = nameOnCardElement ? nameOnCardElement.value : 'User';
+        
+        if (nameOnCardElement && !nameOnCard) {
+            document.getElementById('card-errors').textContent = 'Please enter the name on your card';
+            return;
+        }
+        
+        if (paymentIntentId) {
+            confirmPayment(paymentIntentId, nameOnCard);
+        } else {
+            document.getElementById('card-errors').textContent = 'Payment setup failed. Please try again.';
+        }
+        }
+    });
+    }
+  </script>
+</body>
+</html>
+

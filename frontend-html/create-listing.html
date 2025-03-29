@@ -79,7 +79,7 @@
                             <label for="starting-bid" class="block text-sm font-medium text-gray-700">Starting Bid ($)</label>
                             <div class="mt-1 relative rounded-md shadow-sm">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span class="text-gray-500 sm:text-sm">$</span>
+                                    <span class="text-gray-500 sm:text-sm">$  </span>
                                 </div>
                                 <input type="number" name="starting-bid" id="starting-bid" class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md" placeholder="0.00" min="1" step="0.01" required>
                             </div>
@@ -104,7 +104,32 @@
         </div>
     </main>
 
+    <script>
+  document.getElementById("placeBidBtn").addEventListener("click", function () {
+    const amount = document.getElementById("bid-amount").value;
+    const title = document.getElementById("listing-title").textContent;
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get("id");
+
+    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+      const errorEl = document.getElementById("bid-error");
+      errorEl.textContent = "Please enter a valid bid amount";
+      errorEl.classList.remove("hidden");
+      return;
+    }
+
+    const query = new URLSearchParams({
+      listingId: id,
+      listingTitle: title,
+      amount: parseFloat(amount)
+    }).toString();
+
+    window.location.href = `index.html?${query}`;
+  });
+</script>
+
     <script src="js/api-service.js"></script>
+    <script src="js/payment-service.js"></script>
     <script src="js/create-listing.js"></script>
     <script src="js/header-auth.js"></script>
 </body>
