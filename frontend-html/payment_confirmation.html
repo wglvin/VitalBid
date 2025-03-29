@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Confirmation | Auction Payment System</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600&display=swap">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #f8f9fa;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 480px;
+      width: 100%;
+      padding: 2rem;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+      background: #fff;
+      margin: 20px;
+    }
+    .success-section {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .success-circle {
+      width: 60px;
+      height: 60px;
+      background-color: rgba(58, 191, 87, 0.2);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-right: 1.5rem;
+    }
+    .success-mark {
+      color: #3abf57;
+      font-size: 26px;
+      font-weight: bold;
+    }
+    .confirmation-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 0.5rem 0;
+    }
+    .confirmation-subtitle {
+      font-size: 1rem;
+      color: #666;
+      margin: 0;
+    }
+    .price {
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 0.5rem;
+    }
+    .payment-info {
+      background-color: #f9f9f9;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .info-row:last-child {
+      margin-bottom: 0;
+    }
+    .info-label {
+      color: #666;
+      font-size: 0.9rem;
+    }
+    .info-value {
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: #333;
+    }
+    .divider {
+      height: 1px;
+      background-color: #e0e0e0;
+      margin: 1rem 0;
+    }
+    .payment-method-info {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .card-icon {
+      margin-right: 10px;
+    }
+    .back-button {
+      background-color: #f0f0f0;
+      color: #666;
+      border: none;
+      border-radius: 30px;
+      padding: 15px;
+      font-size: 1rem;
+      font-weight: 600;
+      width: 100%;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      margin-top: 1rem;
+    }
+    .back-button:hover {
+      background-color: #e0e0e0;
+    }
+    .print-button {
+      background-color: #ff6c6c;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      padding: 15px;
+      font-size: 1rem;
+      font-weight: 600;
+      width: 100%;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .print-button:hover {
+      background-color: #ff5555;
+    }
+    .buttons-container {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .payment-id {
+      text-align: center;
+      color: #999;
+      font-size: 0.8rem;
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="success-section">
+      <div class="success-circle">
+        <span class="success-mark">✓</span>
+      </div>
+      <div>
+        <h1 class="confirmation-title">Payment Successful</h1>
+        <p class="confirmation-subtitle">Your order has been confirmed</p>
+      </div>
+    </div>
+
+    <div class="price">$ <span id="paymentAmount">0.00</span></div>
+    
+    <div class="payment-info">
+      <div class="info-row">
+        <div class="info-label">Date</div>
+        <div class="info-value" id="paymentDate">March 30, 2025</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Time</div>
+        <div class="info-value" id="paymentTime">01:34:02</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Payment ID</div>
+        <div class="info-value" id="paymentIntentId">pi_3R83GfRoJbU4bIcv0HNeLwxz</div>
+      </div>
+      
+      <div class="divider"></div>
+      
+      <div class="info-row">
+        <div class="info-label">Listing ID</div>
+        <div class="info-value" id="listingId">-</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Listing Title</div>
+        <div class="info-value" id="listingTitle">-</div>
+      </div>
+      
+      <div class="divider"></div>
+      
+      <div class="payment-method-info">
+        <img src="images/visa_img.png" alt="Visa" width="40" class="card-icon" id="cardBrandImage">
+        <div class="info-value" id="cardInfo">•••• 4242</div>
+      </div>
+    </div>
+
+    <div class="buttons-container">
+      <button class="back-button" id="backToHome">Back to Home</button>
+      <button class="print-button" id="printReceipt">Print Receipt</button>
+    </div>
+    
+    <div class="payment-id">
+      Transaction reference: <span id="transactionReference">-</span>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * Parse query parameters from URL
+     * @returns {Object} Object containing payment_intent and other params
+     */
+    function getQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        paymentIntent: params.get('payment_intent'),
+        listingId: params.get('listingId'),
+        listingTitle: params.get('listingTitle'),
+        amount: parseFloat(params.get('amount') || '0.00')
+      };
+    }
+
+    /**
+     * Fetch payment details from the server
+     * @param {string} paymentIntentId - The ID of the payment intent
+     * @returns {Promise<Object>} Promise resolving to payment details
+     */
+    async function fetchPaymentDetails(paymentIntentId) {
+      try {
+        const response = await fetch(`http://localhost:5002/v1/payment_intents/${paymentIntentId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch payment details');
+        }
+        
+        return await response.json();
+      } catch (err) {
+        console.error("Failed to fetch payment details:", err);
+        return null;
+      }
+    }
+
+    /**
+     * Format a date string
+     * @param {Date} date - The date to format
+     * @returns {string} Formatted date string
+     */
+    function formatDate(date) {
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      return date.toLocaleDateString(undefined, options);
+    }
+
+    /**
+     * Format a time string
+     * @param {Date} date - The date to format
+     * @returns {string} Formatted time string
+     */
+    function formatTime(date) {
+      const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+      return date.toLocaleTimeString(undefined, options);
+    }
+
+    /**
+     * Initialize the confirmation page
+     */
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Parse URL parameters
+      const { paymentIntent, listingId, listingTitle, amount } = getQueryParams();
+      
+      // Update payment ID display
+      const paymentIntentIdElement = document.getElementById('paymentIntentId');
+      if (paymentIntentIdElement && paymentIntent) {
+        paymentIntentIdElement.textContent = paymentIntent;
+      }
+      
+      // Update transaction reference
+      const transactionReferenceElement = document.getElementById('transactionReference');
+      if (transactionReferenceElement && paymentIntent) {
+        transactionReferenceElement.textContent = paymentIntent;
+      }
+      
+      // Update listing details
+      const listingIdElement = document.getElementById('listingId');
+      if (listingIdElement) {
+        listingIdElement.textContent = listingId || '-';
+      }
+      
+      const listingTitleElement = document.getElementById('listingTitle');
+      if (listingTitleElement) {
+        listingTitleElement.textContent = listingTitle || '-';
+      }
+      
+      // Update amount
+      const paymentAmountElement = document.getElementById('paymentAmount');
+      if (paymentAmountElement) {
+        // Use the amount from URL or try to get from the payment intent
+        let displayAmount = amount;
+        
+        if (paymentIntent && !displayAmount) {
+          // Try to fetch payment details
+          const paymentDetails = await fetchPaymentDetails(paymentIntent);
+          if (paymentDetails && paymentDetails.amount) {
+            displayAmount = paymentDetails.amount / 100; // Stripe amounts are in cents
+          }
+        }
+        
+        paymentAmountElement.textContent = displayAmount ? displayAmount.toFixed(2) : '0.00';
+      }
+      
+      // Set date and time (current time if not provided)
+      const now = new Date();
+      
+      const paymentDateElement = document.getElementById('paymentDate');
+      if (paymentDateElement) {
+        paymentDateElement.textContent = formatDate(now);
+      }
+      
+      const paymentTimeElement = document.getElementById('paymentTime');
+      if (paymentTimeElement) {
+        paymentTimeElement.textContent = formatTime(now);
+      }
+      
+      // Set up card info display - typically you'd get this from the payment details
+      // For now, display the hard-coded test card info as in the screenshot
+      const cardInfoElement = document.getElementById('cardInfo');
+      if (cardInfoElement) {
+        cardInfoElement.textContent = '•••• 4242'; // Last 4 digits from test card
+      }
+      
+      // Event listeners for buttons
+      const backButton = document.getElementById('backToHome');
+      if (backButton) {
+        backButton.addEventListener('click', function() {
+          window.location.href = '/'; // Navigate to home page
+        });
+      }
+      
+      const printButton = document.getElementById('printReceipt');
+      if (printButton) {
+        printButton.addEventListener('click', function() {
+          window.print();
+        });
+      }
+    });
+  </script>
+</body>
+</html>

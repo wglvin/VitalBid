@@ -33,6 +33,7 @@ bids = {}  # Store bid information
 
 @app.route('/v1/payment_intents', methods=['POST'])
 def create_payment_intent():
+    logger.info("Received request to /v1/payment_intents")
     """Create a payment intent and return client secret"""
     try:
         data = request.json
@@ -53,7 +54,7 @@ def create_payment_intent():
             metadata={'bid_id': bid_id},
             confirm=True, 
             payment_method='pm_card_visa', 
-            return_url=f"{request.headers.get('Origin', 'http://localhost:5001')}/payment-complete.html"
+            return_url=f"{request.headers.get('Origin', 'http://localhost:5002')}/payment-complete.html"
         )
         
         # Store payment intent with bid information
@@ -247,7 +248,7 @@ def health_check():
 
 if __name__ == '__main__':
     # Explicitly set port to 5001 regardless of environment variable
-    port = 5001
+    port = 5002
     logger.info(f"Starting Flask app on port {port}")
     # Use debug=True to see more detailed errors
     app.run(host='0.0.0.0', port=port)
