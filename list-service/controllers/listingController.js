@@ -41,23 +41,10 @@ exports.getListingById = async (req, res) => {
 // Create new listing
 exports.createListing = async (req, res) => {
   try {
-    console.log("===== LISTING CREATION DEBUG =====");
-    console.log("All request headers:", req.headers);
-    console.log("All body fields:", Object.keys(req.body));
-    console.log("email in body:", req.body.email);
-    console.log("X-User-Email header:", req.headers['x-user-email']);
-    console.log("================================");
-    
     const { 
       title, description, organId, startingPrice, expiryDate, 
-      status, ownerId, email, username // Changed field names to match JSON
+      status, ownerId, email, username
     } = req.body;
-    
-    // More detailed console logs for debugging
-    console.log("email from request body:", email);
-    console.log("username from request body:", username);
-    console.log("X-User-Email from headers:", req.headers['x-user-email']);
-    console.log("X-User-Name from headers:", req.headers['x-user-name']);
     
     // Validate required fields
     if (!title || !startingPrice || !expiryDate || !organId || !ownerId) {
@@ -95,8 +82,6 @@ exports.createListing = async (req, res) => {
     // Get email and username using exact field names that match the userData JSON
     const finalEmail = email || req.headers['x-user-email'] || `owner${ownerId}@example.com`;
     const finalUsername = username || req.headers['x-user-name'] || `User ${ownerId}`;
-    
-    console.log("Final values for notification:", { finalEmail, finalUsername });
     
     // Publish Kafka event for listing creation with the proper user data
     await produceMessage('ListingCreated', {

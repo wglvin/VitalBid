@@ -1,3 +1,0 @@
-@echo off
-echo Running Kafka test inside Docker container...
-docker exec -it notification node test-kafka-producer.js %*

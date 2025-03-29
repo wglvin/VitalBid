@@ -11,7 +11,6 @@ const simulateGetUserEmailFromDatabase = async (userId) => {
         '1': 'moses.kng.2023@smu.edu.sg',
         '2': 'test.user@example.com',
         '3': 'another.user@example.com'
-        // No special case for user ID 58 - should come from Kafka message
     };
     
     const email = mockUserDatabase[userId];
@@ -38,13 +37,6 @@ const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
             email = await simulateGetUserEmailFromDatabase(userId);
         }
         
-        // For testing, override with the specified email if in test mode
-        const testMode = process.env.TEST_MODE === 'true';
-        if (testMode) {
-            email = 'moses.kng.2023@smu.edu.sg';
-            console.log(`[TEST MODE] Overriding recipient email to: ${email}`);
-        }
-        
         // Use the Python-style exact API call to Mailgun
         const mailgunUrl = `https://api.mailgun.net/v3/${config.mailgun.domain}/messages`;
         
@@ -69,7 +61,7 @@ const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
             }
         );
         
-        console.log(`Email sent successfully to ${email}: ${JSON.stringify(response.data)}`);
+        console.log(`Email sent successfully to ${email}`);
         
         // Try to publish to Kafka but don't fail if it doesn't work
         await produceMessage(config.kafka.topics.notifications, {
@@ -113,15 +105,9 @@ const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
 
 const processListingCreatedEvent = async (listing) => {
     try {
-        // Enhanced debugging
-        console.log('Processing listing created event with data:', listing);
-        console.log('Using email from Kafka message directly:', listing.email);
-
-        // More robust extraction with fallbacks
         const { userId, title, description } = listing;
         
-        // Prioritize the email from the Kafka message (which comes from frontend localStorage)
-        // with no special case handling
+        // Prioritize the email from the Kafka message
         let email = listing.email;
         
         // Only fall back to database lookup if no email was provided
@@ -131,9 +117,6 @@ const processListingCreatedEvent = async (listing) => {
         }
         
         const username = listing.username || `User ${userId || 'unknown'}`;
-        
-        console.log(`Final email selected: ${email}`);
-        console.log(`Using username: ${username} for notification`);
         
         const greeting = username ? `Hello ${username},` : 'Hello,';
         

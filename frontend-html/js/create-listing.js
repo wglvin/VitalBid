@@ -101,28 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem("lastUsedEmail", userData.email);
             console.log("Storing email in localStorage for debugging:", userData.email);
             
-            // Additional validation to confirm email field exists and is correctly formatted
-            if (userData.email) {
-                console.log(`✅ Email field found: ${userData.email}`);
-            } else {
-                console.warn("⚠️ No email field found in userData!");
-                console.log("Full userData object:", JSON.stringify(userData, null, 2));
-            }
-            
-            // For debugging - list all localStorage keys
-            console.log("All localStorage keys:", Object.keys(localStorage));
-            console.log("Raw userData string:", localStorage.getItem("userData"));
-            try {
-                // Verify userData parsing works and contains expected fields
-                const rawUserData = localStorage.getItem("userData");
-                if (rawUserData) {
-                    const parsedData = JSON.parse(rawUserData);
-                    console.log("Parsed userData email:", parsedData.email);
-                    console.log("Parsed userData userid:", parsedData.userid);
-                }
-            } catch (e) {
-                console.error("Error parsing userData:", e);
-            }
+
             
             const listingData = {
                 name: document.getElementById('listing-name').value,
