@@ -162,17 +162,17 @@ services:
 
   # Payment Microservice
   payments-service:
-  build: ./payments-service
-  container_name: payments_service
-  restart: always
-  depends_on:
-    - kafka
-  environment:
-    - STRIPE_API_KEY=${STRIPE_API_KEY}
-    - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    - KAFKA_BID_TOPIC=successful-bids
-    - KAFKA_BID_UPDATES_TOPIC=bid-updates
-    - KAFKA_GROUP_ID=payment-service-group
+    build: ./payments-service
+    container_name: payments_service
+    restart: always
+    depends_on:
+      - kafka
+    environment:
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_BID_TOPIC=successful-bids
+      - KAFKA_BID_UPDATES_TOPIC=bid-updates
+      - KAFKA_GROUP_ID=payment-service-group
   ports:
     - "5002:5001"  # Map to 5002 on host to avoid conflict with view-listing-bids-service
   networks:
