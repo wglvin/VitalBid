@@ -7,6 +7,28 @@ services:
       - name: list-route
         paths:
           - /listing
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Content-Type
+            - Authorization
+            - Content-Length
+            - X-User-Email
+            - X-User-Name
+            - X-User-ID
+          credentials: true
+          max_age: 3600
+          preflight_continue: false
 
   - name: bid-service
     # url: http://172.26.12.154:3002
@@ -15,6 +37,28 @@ services:
       - name: bid-route
         paths:
           - /bidding
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Content-Type
+            - Authorization
+            - Content-Length
+            - X-User-Email
+            - X-User-Name
+            - X-User-ID
+          credentials: true
+          max_age: 3600
+          preflight_continue: false
 
   - name: view-listing-bids-service
     url: http://view-listing-bids-service:5001

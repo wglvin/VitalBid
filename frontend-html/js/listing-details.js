@@ -217,12 +217,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Get current user data from localStorage
+    function getCurrentUserData() {
+        // Use userData key (which is what login.js actually sets)
+        const userData = JSON.parse(localStorage.getItem('userData') || '{"userid": 1, "email": "guest@example.com", "username": "Guest"}');
+        console.log("Retrieved user data from localStorage:", userData);
+        return userData;
+    }
+
     // Get current user ID (implement based on your auth system)
     function getCurrentUserId() {
-        // This should be replaced with your actual auth logic
-        // Example: get user ID from localStorage, session, etc.
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        return user.id || 1;
+        // Use the userData key instead of 'user'
+        const userData = getCurrentUserData();
+        // Support both userid and id formats
+        return userData.userid || userData.id || 1;
     }
     
     // Handle submitting a bid
@@ -299,4 +307,4 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize the page
     fetchListingDetails();
-}); 
+});

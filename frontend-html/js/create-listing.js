@@ -93,6 +93,37 @@ document.addEventListener('DOMContentLoaded', function() {
             const timeEndISO = expiryDate.toISOString();
             console.log("Final ISO time_end value:", timeEndISO);
             
+            // Get user data from localStorage
+            const userData = JSON.parse(localStorage.getItem("userData") || '{"userid": 1, "email": "guest@example.com", "username": "Guest"}');
+            console.log("Using user data for listing creation:", userData);
+            
+            // Store the actual email in localStorage for debugging
+            localStorage.setItem("lastUsedEmail", userData.email);
+            console.log("Storing email in localStorage for debugging:", userData.email);
+            
+            // Additional validation to confirm email field exists and is correctly formatted
+            if (userData.email) {
+                console.log(`✅ Email field found: ${userData.email}`);
+            } else {
+                console.warn("⚠️ No email field found in userData!");
+                console.log("Full userData object:", JSON.stringify(userData, null, 2));
+            }
+            
+            // For debugging - list all localStorage keys
+            console.log("All localStorage keys:", Object.keys(localStorage));
+            console.log("Raw userData string:", localStorage.getItem("userData"));
+            try {
+                // Verify userData parsing works and contains expected fields
+                const rawUserData = localStorage.getItem("userData");
+                if (rawUserData) {
+                    const parsedData = JSON.parse(rawUserData);
+                    console.log("Parsed userData email:", parsedData.email);
+                    console.log("Parsed userData userid:", parsedData.userid);
+                }
+            } catch (e) {
+                console.error("Error parsing userData:", e);
+            }
+            
             const listingData = {
                 name: document.getElementById('listing-name').value,
                 description: document.getElementById('listing-description').value,
@@ -100,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 start_bid: parseFloat(document.getElementById('starting-bid').value),
                 time_end: timeEndISO,
                 status: "active",
-                owner_id: 1  // Hardcoded owner_id for now
+                owner_id: userData.userid || userData.id || 1,
             };
             
             console.log("Submitting listing data:", listingData);
@@ -123,11 +154,17 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Submit listing
             console.log("Calling apiService.addListing...");
-            const response = await apiService.addListing(listingData);
-            console.log("API response:", response);
             
-            // Redirect to the listing page using the correct ID property
-            window.location.href = `listing-details.html?id=${response.id}`;
+            try {
+                const response = await apiService.addListing(listingData);
+                console.log("API response:", response);
+                
+                // Redirect to the listing page using the correct ID property
+                window.location.href = `listing-details.html?id=${response.id}`;
+            } catch (error) {
+                console.error('Error creating listing:', error);
+                showError(error.message || 'Failed to create listing');
+            }
         } catch (error) {
             console.error('Error creating listing:', error);
             showError(error.message || 'Failed to create listing');
@@ -147,4 +184,4 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize the page
     loadOrgans();
-}); 
+});

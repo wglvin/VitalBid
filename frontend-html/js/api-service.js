@@ -3,9 +3,45 @@
 const API_BASE_URL = "http://localhost:8000";
 
 const apiService = {
+  // Helper function to get user data from localStorage
+  getUserData() {
+    try {
+      const userData = JSON.parse(localStorage.getItem("userData") || '{"userid": 1, "email": "guest@example.com", "username": "Guest"}');
+      console.log("Retrieved user data from localStorage:", userData);
+      return userData;
+    } catch (error) {
+      console.warn("Error parsing userData from localStorage:", error);
+      return { userid: 1, email: "guest@example.com", username: "Guest" };
+    }
+  },
+
+  // Helper function to add user metadata to any request options
+  addUserMetadata(options = {}) {
+    const userData = this.getUserData();
+    
+    // Initialize headers if needed
+    if (!options.headers) {
+      options.headers = {};
+    }
+    
+    // Add user metadata headers - use properties as shown in testingRedirect.html example
+    options.headers['X-User-Email'] = userData.email || "guest@example.com";
+    options.headers['X-User-Name'] = userData.username || "Guest";
+    options.headers['X-User-ID'] = userData.userid || userData.id || 1;
+    
+    console.log("Added user metadata to request headers:", {
+      email: options.headers['X-User-Email'],
+      username: options.headers['X-User-Name'],
+      userId: options.headers['X-User-ID']
+    });
+    
+    return options;
+  },
+
   // List Service
   async getAllListings() {
-    const response = await fetch(`${API_BASE_URL}/listing/api/listings`);
+    const options = this.addUserMetadata();
+    const response = await fetch(`${API_BASE_URL}/listing/api/listings`, options);
     if (!response.ok) {
       throw new Error("Failed to fetch listings");
     }
@@ -20,7 +56,8 @@ const apiService = {
   },
 
   async getListingById(listingId) {
-    const response = await fetch(`${API_BASE_URL}/listing/api/listings/${listingId}`);
+    const options = this.addUserMetadata();
+    const response = await fetch(`${API_BASE_URL}/listing/api/listings/${listingId}`, options);
     if (!response.ok) {
       throw new Error("Failed to fetch listing");
     }
@@ -36,6 +73,17 @@ const apiService = {
 
   async addListing(listingData) {
     try {
+      // Get user data from localStorage directly when creating listing
+      const userData = this.getUserData();
+      console.log("Using user data for listing creation:", userData);
+      
+      const lastUsedEmail = localStorage.getItem("lastUsedEmail");
+      console.log("Comparing emails - Last used:", lastUsedEmail, "Current:", userData.email);
+      
+      if (userData.email !== lastUsedEmail) {
+        console.warn("⚠️ EMAIL MISMATCH - userData email changed between form load and submission");
+      }
+      
       // Transform the data to match what the backend expects
       const transformedData = {
         title: listingData.name,
@@ -44,18 +92,24 @@ const apiService = {
         startingPrice: parseFloat(listingData.start_bid),
         expiryDate: listingData.time_end,
         status: listingData.status || 'active',
-        ownerId: parseInt(listingData.owner_id)
+        ownerId: parseInt(listingData.owner_id),
+        // Match field names exactly with the userData JSON structure
+        email: userData.email,          // Changed from userEmail to email
+        username: userData.username     // Changed from userName to username
       };
       
-      console.log("Data being sent to API:", JSON.stringify(transformedData));
+      console.log("Final email being sent to API:", transformedData.email);
+      console.log("Data being sent to API with embedded user info:", JSON.stringify(transformedData));
       
-      const response = await fetch(`${API_BASE_URL}/listing/api/listings`, {
+      const options = this.addUserMetadata({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(transformedData),
       });
+
+      const response = await fetch(`${API_BASE_URL}/listing/api/listings`, options);
 
       if (!response.ok) {
         let errorMessage = "Failed to add listing";
@@ -81,7 +135,8 @@ const apiService = {
   // Organ Service
   async getAllOrgans() {
     console.log("Fetching organs from:", `${API_BASE_URL}/listing/api/organs`);
-    const response = await fetch(`${API_BASE_URL}/listing/api/organs`);
+    const options = this.addUserMetadata();
+    const response = await fetch(`${API_BASE_URL}/listing/api/organs`, options);
     if (!response.ok) {
       console.error("Error fetching organs:", response.status, await response.text());
       throw new Error("Failed to fetch organs");
@@ -97,7 +152,8 @@ const apiService = {
   },
 
   async getOrganById(organId) {
-    const response = await fetch(`${API_BASE_URL}/listing/api/organs/${organId}`);
+    const options = this.addUserMetadata();
+    const response = await fetch(`${API_BASE_URL}/listing/api/organs/${organId}`, options);
     if (!response.ok) {
       throw new Error("Failed to fetch organ");
     }
@@ -114,13 +170,15 @@ const apiService = {
     // Remove createdAt and updatedAt if they exist in the input
     const { createdAt, updatedAt, ...cleanedData } = organData;
     
-    const response = await fetch(`${API_BASE_URL}/listing/api/organs`, {
+    const options = this.addUserMetadata({
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(cleanedData),
     });
+    
+    const response = await fetch(`${API_BASE_URL}/listing/api/organs`, options);
     if (!response.ok) {
       throw new Error("Failed to add organ");
     }
@@ -129,7 +187,8 @@ const apiService = {
 
   // Bid Service
   async getListingBids(listingId) {
-    const response = await fetch(`${API_BASE_URL}/bidding/api/bids/history/${listingId}`);
+    const options = this.addUserMetadata();
+    const response = await fetch(`${API_BASE_URL}/bidding/api/bids/history/${listingId}`, options);
     if (!response.ok) {
       throw new Error("Failed to fetch bids");
     }
@@ -137,7 +196,7 @@ const apiService = {
   },
 
   async placeBid(listingId, bidderId, bidAmount) {
-    const response = await fetch(`${API_BASE_URL}/bidding/api/bids`, {
+    const options = this.addUserMetadata({
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -148,6 +207,8 @@ const apiService = {
         amount: parseFloat(bidAmount)
       }),
     });
+    
+    const response = await fetch(`${API_BASE_URL}/bidding/api/bids`, options);
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || "Failed to place bid");
@@ -156,32 +217,24 @@ const apiService = {
   },
 
   async getListingsWithBids() {
-    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/listings-with-bids`);
+    const options = this.addUserMetadata();
+    const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/listings-with-bids`, options);
     if (!response.ok) {
       throw new Error("Failed to fetch listings with bids");
     }
     return await response.json();
   },
 
-  // // Proofing Service
-  // async getListingProof(listingId) {
-  //   const response = await fetch(`${API_BASE_URL}/get_listing_bids/api/proof/get_proof/listing/${listingId}`);
-  //   if (!response.ok) {
-  //     throw new Error("Failed to fetch proof");
-  //   }
-  //   return await response.json();
-  // }
-
   acceptBid: async function(bidId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/bidding/api/bids/${bidId}/accept`, {
+      const options = this.addUserMetadata({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        },
-        // You might need to include authentication credentials
-        // credentials: 'include'
+        }
       });
+      
+      const response = await fetch(`${API_BASE_URL}/bidding/api/bids/${bidId}/accept`, options);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -194,4 +247,4 @@ const apiService = {
       throw error;
     }
   }
-}; 
+};

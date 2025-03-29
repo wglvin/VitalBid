@@ -103,6 +103,12 @@ exports.acceptBid = async (req, res) => {
     const bidId = req.params.id;
     const bid = await Bid.findByPk(bidId);
     
+    // Extract email and username from headers instead of query parameters
+    const email = req.headers['x-user-email'];
+    const username = req.headers['x-user-name'];
+    
+    console.log("Bid acceptance email notification data:", { email, username });
+    
     if (!bid) {
       return res.status(404).json({ message: 'Bid not found' });
     }
@@ -128,6 +134,22 @@ exports.acceptBid = async (req, res) => {
     
     // Get the updated bid
     const updatedBid = await Bid.findByPk(bidId);
+    
+    // Send notification if we have email
+    if (email) {
+      try {
+        // Send notification via notification service
+        const notificationResponse = await axios.post(`http://notification:3000/notify/email`, {
+          email: email,
+          subject: 'Bid Accepted',
+          text: `Hello ${username || 'there'},\n\nYour bid of $${updatedBid.amount} has been accepted.\n\nThank you for using our service!`
+        });
+        console.log('Notification sent:', notificationResponse.data);
+      } catch (notifyError) {
+        console.error('Failed to send notification:', notifyError.message);
+        // Continue - don't fail the operation just because notification failed
+      }
+    }
     
     return res.status(200).json({ 
       message: 'Bid accepted successfully', 
@@ -203,4 +225,4 @@ exports.getBidHistory = async (req, res) => {
       error: error.message 
     });
   }
-}; 
+};

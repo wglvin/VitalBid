@@ -34,6 +34,15 @@ const produceMessage = async (type, data) => {
             return { status: 'skipped', reason: 'kafka_not_connected' };
         }
         
+        // Log detailed information about user data in the message - no special case handling
+        if (type === 'ListingCreated') {
+            console.log('Publishing ListingCreated event with user data:', {
+                userId: data.userId,
+                email: data.email,
+                username: data.username
+            });
+        }
+        
         const message = {
             type,
             data,

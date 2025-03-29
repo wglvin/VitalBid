@@ -3,7 +3,7 @@ const config = require('../config/config');
 const { produceMessage } = require('../kafka/kafkaProducer');
 const Notification = require('../models/notificationModel');
 
-// Function to simulate getting user email from database
+// Function to simulate getting user email from database when only ID is available
 const simulateGetUserEmailFromDatabase = async (userId) => {
     // This would normally query a database
     // For demonstration purposes, we'll use a simple object to simulate a database
@@ -11,11 +11,15 @@ const simulateGetUserEmailFromDatabase = async (userId) => {
         '1': 'moses.kng.2023@smu.edu.sg',
         '2': 'test.user@example.com',
         '3': 'another.user@example.com'
+        // No special case for user ID 58 - should come from Kafka message
     };
     
     const email = mockUserDatabase[userId];
     if (!email) {
-        throw new Error(`User ${userId} not found in database`);
+        // For users not in our mock database, use a generated email based on ID
+        const generatedEmail = `user${userId}@organdonation.com`;
+        console.log(`User ${userId} not found in database, using generated email: ${generatedEmail}`);
+        return generatedEmail;
     }
     
     return email;
@@ -109,10 +113,32 @@ const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
 
 const processListingCreatedEvent = async (listing) => {
     try {
-        const { userId, email, title, description } = listing;
+        // Enhanced debugging
+        console.log('Processing listing created event with data:', listing);
+        console.log('Using email from Kafka message directly:', listing.email);
+
+        // More robust extraction with fallbacks
+        const { userId, title, description } = listing;
+        
+        // Prioritize the email from the Kafka message (which comes from frontend localStorage)
+        // with no special case handling
+        let email = listing.email;
+        
+        // Only fall back to database lookup if no email was provided
+        if (!email || !email.includes('@')) {
+            console.log(`No valid email in message, looking up email for user ${userId}`);
+            email = await simulateGetUserEmailFromDatabase(userId);
+        }
+        
+        const username = listing.username || `User ${userId || 'unknown'}`;
+        
+        console.log(`Final email selected: ${email}`);
+        console.log(`Using username: ${username} for notification`);
+        
+        const greeting = username ? `Hello ${username},` : 'Hello,';
         
         const subject = 'Your Organ Listing Has Been Created';
-        const text = `Hello,
+        const text = `${greeting}
         
 Your listing "${title}" has been successfully created in the Organ Marketplace.
 
