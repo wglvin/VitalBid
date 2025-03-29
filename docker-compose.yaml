@@ -16,9 +16,10 @@ services:
       - organ_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      interval: 10s
+      timeout: 20s
+      retries: 10
+      start_period: 50s  # Wait before starting health checks
 
   # Bidding Database service, comment out if want external
   bidding-db:
@@ -38,9 +39,10 @@ services:
       - organ_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-password}", "--port=3307"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      interval: 10s
+      timeout: 20s
+      retries: 10
+      start_period: 50s  # Wait before starting health checks
 
   resolving-db:
     image: mysql:8.0
@@ -59,9 +61,10 @@ services:
       - organ_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-password}", "--port=3308"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      interval: 10s
+      timeout: 20s
+      retries: 10
+      start_period: 50s  # Wait before starting health checks
 
   # Listing Microservice
   list-service:
@@ -146,9 +149,10 @@ services:
     restart: always
     depends_on:
       - list-service
+      - bid-service  # Add this line - it needs bids data
     environment:
-      LISTING_SERVICE_URL: ${LISTING_SERVICE_URL}
-      BIDDING_SERVICE_URL: ${BIDDING_SERVICE_URL}
+      LISTING_SERVICE_URL: ${LISTING_SERVICE_URL:-http://list-service:3001}
+      BIDDING_SERVICE_URL: ${BIDDING_SERVICE_URL:-http://bid-service:3002}
     ports:
       - "5001:5001"
     networks:
@@ -198,7 +202,7 @@ services:
       - MAILGUN_API_KEY=${MAILGUN_API_KEY}
       - MAILGUN_DOMAIN=${MAILGUN_DOMAIN}
       - EMAIL_FROM=${EMAIL_FROM}
-      - TEST_MODE=true
+    
     volumes:
       - ./notification:/app
       - /app/node_modules
@@ -223,7 +227,11 @@ services:
     ports:
       - "9092:9092"
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: kafka
+      # Replace these settings - KAFKA_ADVERTISED_HOST_NAME doesn't work properly
+      KAFKA_LISTENERS: PLAINTEXT://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "listing-events:1:1,notification-events:1:1"
     volumes:
