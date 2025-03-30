@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 start_bid: parseFloat(document.getElementById('starting-bid').value),
                 time_end: timeEndISO,
                 status: "active",
-                owner_id: userData.userid || userData.id || 1,
+                owner_id: userData.userid,
             };
             
             console.log("Submitting listing data:", listingData);
