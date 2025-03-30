@@ -20,6 +20,12 @@ document.addEventListener('DOMContentLoaded', function() {
             loadingIndicator.classList.add('hidden');
             listingsContainer.classList.remove('hidden');
             
+            // Add computed status based on expiry date
+            data.forEach(listing => {
+                const isExpired = new Date(listing.time_end) <= new Date();
+                listing.status = isExpired ? 'ended' : 'active';
+            });
+            
             // Render all listings
             renderListings(data, tabContentAll);
             
@@ -56,11 +62,19 @@ document.addEventListener('DOMContentLoaded', function() {
             clone.querySelector('.listing-title').textContent = listing.name;
             clone.querySelector('.listing-id').textContent = `ID: ${listing.listing_id}`;
             
-            // Set status badge
+            // Set listing image
+            if (clone.querySelector('.listing-image')) {
+                clone.querySelector('.listing-image').src = listing.image || 'default-organ.jpg';
+                clone.querySelector('.listing-image').alt = listing.name;
+            }
+            
+            // Set status badge (based on computed status)
             const statusBadge = clone.querySelector('.listing-status');
-            const isActive = listing.status === 'active';
-            statusBadge.textContent = isActive ? 'Active' : 'Ended';
-            statusBadge.classList.add(isActive ? 'status-active' : 'status-ended');
+            if (statusBadge) {
+                const isActive = listing.status === 'active';
+                statusBadge.textContent = isActive ? 'Active' : 'Ended';
+                statusBadge.classList.add(isActive ? 'status-active' : 'status-ended');
+            }
             
             // Set pricing data
             clone.querySelector('.listing-start-bid').textContent = `$${listing.start_bid.toLocaleString()}`;
@@ -76,10 +90,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Set bids count
             clone.querySelector('.listing-bids-count').textContent = listing.bids_count;
             
-            // Set time remaining if active
+            // Set time remaining
             const timeRemainingContainer = clone.querySelector('.time-remaining-container');
             const timeRemainingElement = clone.querySelector('.listing-time-remaining');
             
+            // Check if listing is expired based on time_end
+            const isActive = new Date(listing.time_end) > new Date();
             if (isActive) {
                 timeRemainingElement.textContent = getTimeRemaining(listing.time_end);
             } else {

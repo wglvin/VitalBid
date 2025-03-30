@@ -43,7 +43,7 @@ exports.createListing = async (req, res) => {
   try {
     const { 
       title, description, organId, startingPrice, expiryDate, 
-      status, ownerId, email, username
+      ownerId, email, username, image
     } = req.body;
     
     // Validate required fields
@@ -75,7 +75,7 @@ exports.createListing = async (req, res) => {
       startingPrice,
       expiryDate: expiry,
       organId,
-      status,
+      image: image || 'default-organ.jpg',
       ownerId
     });
     
@@ -92,7 +92,7 @@ exports.createListing = async (req, res) => {
       email: finalEmail,
       username: finalUsername,
       price: parseFloat(listing.startingPrice),
-      status: listing.status,
+      image: listing.image,
       organId: listing.organId,
       expiryDate: listing.expiryDate,
       createdAt: listing.createdAt
@@ -108,7 +108,7 @@ exports.createListing = async (req, res) => {
 // Update listing
 exports.updateListing = async (req, res) => {
   try {
-    const { title, description, startingPrice, expiryDate, status } = req.body;
+    const { title, description, startingPrice, expiryDate, image } = req.body;
     const listingId = req.params.id;
     
     // Find the listing
@@ -116,11 +116,6 @@ exports.updateListing = async (req, res) => {
     
     if (!listing) {
       return res.status(404).json({ message: 'Listing not found' });
-    }
-    
-    // Validate status change
-    if (status && !['active', 'pending', 'completed', 'cancelled'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status value' });
     }
     
     // Validate starting price if provided
@@ -132,8 +127,8 @@ exports.updateListing = async (req, res) => {
     let expiry = null;
     if (expiryDate) {
       expiry = new Date(expiryDate);
-      if (expiry <= new Date() && listing.status === 'active') {
-        return res.status(400).json({ message: 'Expiry date must be in the future for active listings' });
+      if (expiry <= new Date()) {
+        return res.status(400).json({ message: 'Expiry date must be in the future' });
       }
     }
     
@@ -143,7 +138,7 @@ exports.updateListing = async (req, res) => {
       description: description !== undefined ? description : listing.description,
       startingPrice: startingPrice !== undefined ? startingPrice : listing.startingPrice,
       expiryDate: expiryDate ? expiry : listing.expiryDate,
-      status: status || listing.status
+      image: image || listing.image
     },{
       where: {
         id: listingId

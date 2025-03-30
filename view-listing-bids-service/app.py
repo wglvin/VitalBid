@@ -131,6 +131,26 @@ def get_listings_with_bids():
             if formatted_bids:
                 highest_bid = formatted_bids[0]
             
+            # Fix datetime comparison issue - method 1: Make both naive
+            current_time = datetime.now()  # Naive datetime
+            
+            # Parse the expiry time and make it naive as well
+            expiry_time_str = listing['expiryDate']
+            if 'Z' in expiry_time_str:
+                expiry_time_str = expiry_time_str.replace('Z', '')
+                
+            try:
+                expiry_time = datetime.fromisoformat(expiry_time_str)
+            except ValueError:
+                # Fallback for different date formats
+                try:
+                    expiry_time = datetime.strptime(expiry_time_str, "%Y-%m-%dT%H:%M:%S.%f")
+                except ValueError:
+                    expiry_time = datetime.strptime(expiry_time_str, "%Y-%m-%dT%H:%M:%S")
+            
+            # Now compare the two naive datetimes
+            derived_status = 'active' if expiry_time > current_time else 'ended'
+            
             # Create combined listing object with bids
             listing_with_bids = {
                 'listing_id': listing['id'],
@@ -138,9 +158,10 @@ def get_listings_with_bids():
                 'description': listing['description'],
                 'time_end': listing['expiryDate'],
                 'start_bid': float(listing['startingPrice']),
-                'status': listing['status'],
+                'status': derived_status,  # Now derived from expiry date
                 'organ_id': listing['organId'],
                 'owner_id': listing['ownerId'],
+                'image': listing.get('image', 'default-organ.jpg'),  # Added image with default
                 'current_bid': highest_bid['bid_amt'] if highest_bid else None,
                 'highest_bidder': highest_bid['bidder_id'] if highest_bid else None,
                 'bids_count': len(formatted_bids),

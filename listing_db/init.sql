@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS listings (
     title VARCHAR(255) NOT NULL,
     description TEXT,
     startingPrice DECIMAL(10, 2) NOT NULL,
-    status ENUM('active', 'pending', 'completed', 'cancelled') DEFAULT 'active',
+    image VARCHAR(255) DEFAULT 'default-organ.jpg',
     expiryDate DATETIME NOT NULL,
     ownerId INT NOT NULL,
     organId INT NOT NULL,

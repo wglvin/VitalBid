@@ -91,11 +91,11 @@ const apiService = {
         organId: parseInt(listingData.organ_id),
         startingPrice: parseFloat(listingData.start_bid),
         expiryDate: listingData.time_end,
-        status: listingData.status || 'active',
+        image: listingData.image || 'default-organ.jpg',
         ownerId: parseInt(listingData.owner_id),
         // Match field names exactly with the userData JSON structure
-        email: userData.email,          // Changed from userEmail to email
-        username: userData.username     // Changed from userName to username
+        email: userData.email,
+        username: userData.username
       };
       
       console.log("Final email being sent to API:", transformedData.email);

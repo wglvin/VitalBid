@@ -1,11 +1,11 @@
 // Database configuration
 const dbConfig = {
-  host: process.env.DB_HOST || 'listing-db',
+  host: process.env.DB_HOST,
   port: process.env.DB_PORT || 3308,
   dialect: 'mysql',
-  username: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'password',
-  database: process.env.DB_NAME || 'listing_db',
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   pool: {
     max: 5,
     min: 0,

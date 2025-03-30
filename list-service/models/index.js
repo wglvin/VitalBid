@@ -77,12 +77,6 @@ const Listing = {
     if (options.where) {
       const whereClauses = [];
       
-      // Add status filter if present
-      if (options.where.status) {
-        whereClauses.push('l.status = ?');
-        params.push(options.where.status);
-      }
-      
       // Add expiry date filter if present
       if (options.where.expiryDate && options.where.expiryDate['[Op.lt]']) {
         whereClauses.push('l.expiryDate < ?');
@@ -108,7 +102,7 @@ const Listing = {
   create: async (data) => {
     const sql = `
       INSERT INTO listings 
-      (title, description, startingPrice, status, expiryDate, organId, createdAt, updatedAt, ownerId) 
+      (title, description, startingPrice, image, expiryDate, organId, createdAt, updatedAt, ownerId) 
       VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)
     `;
     
@@ -116,7 +110,7 @@ const Listing = {
       data.title, 
       data.description, 
       data.startingPrice, 
-      data.status || 'active', 
+      data.image || 'default-organ.jpg', 
       data.expiryDate, 
       data.organId,
       data.ownerId
@@ -133,11 +127,6 @@ const Listing = {
     let params = [];
     
     // Build the SET part of the query dynamically based on the data
-    if (data.status !== undefined) {
-      updateFields.push('status = ?');
-      params.push(data.status);
-    }
-    
     if (data.title !== undefined) {
       updateFields.push('title = ?');
       params.push(data.title);
@@ -156,6 +145,11 @@ const Listing = {
     if (data.expiryDate !== undefined) {
       updateFields.push('expiryDate = ?');
       params.push(data.expiryDate);
+    }
+    
+    if (data.image !== undefined) {
+      updateFields.push('image = ?');
+      params.push(data.image);
     }
     
     // Add updatedAt timestamp
