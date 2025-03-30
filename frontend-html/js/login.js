@@ -26,7 +26,8 @@ async function loginUser() {
             // Store both token and full response data
             localStorage.setItem("authToken", result.token);
             localStorage.setItem("userData", JSON.stringify(result));
-            setTimeout(() => window.location.href = "../testingRedirect.html", 3500);
+            // index.html can be replaced by testingRedirect for testing purpose
+            setTimeout(() => window.location.href = "../index.html", 3500);
         } else {
             showToast(result.reason || "Login failed", "warning");
         }
