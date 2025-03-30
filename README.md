@@ -68,9 +68,6 @@ Key features:
 
 The frontend is built with vanilla JavaScript and styled with TailwindCSS for a clean, responsive design.
 
-## Troubleshooting 
-use "taskkill /PID <PID> /F" in case of conflicting port services
-
 ## Contributing Guidelines
 When contributing to this project, please follow these commit message guidelines:
 * For changes specific to an Image: "[Image]: [Message]"
