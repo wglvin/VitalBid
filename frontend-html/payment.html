@@ -401,6 +401,7 @@
           console.log("Payment result:", result);
           
           if (result.paymentIntent.status === 'succeeded') {
+
             console.log("Payment succeeded, redirecting to confirmation page");
             window.location.href = `payment_confirmation.html?payment_intent=${result.paymentIntent.id}&listingId=${encodeURIComponent(listingId)}&listingTitle=${encodeURIComponent(listingTitle)}&amount=${encodeURIComponent(amount)}`;
           } else if (result.paymentIntent.status === 'requires_action') {
@@ -418,6 +419,7 @@
         document.getElementById('card-errors').textContent = "Payment processing error: " + err.message;
       }
     }
+
     
     /**
      * Handle additional payment actions if required (like 3D Secure)
