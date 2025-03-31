@@ -165,6 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 winnerSection.innerHTML = `
                     <p class="text-yellow-800 font-semibold">🏆 Winner: Bidder #${topBid.bidder_id}</p>
                     <p class="text-yellow-700 text-sm mt-1">Winning Bid: $${topBid.bid_amt.toLocaleString()}</p>
+                    <p class="text-yellow-700 text-sm mt-1">Description: ${listing.description || 'No description provided'}</p>
                 `;
         
                 winnerContainer.appendChild(winnerSection);
