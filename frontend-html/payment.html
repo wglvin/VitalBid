@@ -351,7 +351,7 @@
      */
     async function createPaymentIntent(bidId, amount) {
       try {
-        const response = await fetch('http://localhost:5002/v1/payment_intents', {
+        const response = await fetch('http://localhost:8000/payments/v1/payment_intents', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ amount, currency: 'usd', bid_id: bidId })
@@ -450,7 +450,7 @@
      */
     async function checkPaymentStatus(paymentIntentId, listingId, listingTitle, amount) {
       try {
-        const response = await fetch(`http://localhost:5002/v1/payment_intents/${paymentIntentId}/status`, {
+        const response = await fetch(`http://localhost:8000/payments/v1/payment_intents/${paymentIntentId}/status`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         });
