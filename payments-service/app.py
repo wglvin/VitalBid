@@ -5,6 +5,7 @@ import json
 import os
 import sys
 from dotenv import load_dotenv
+from pathlib import Path
 import logging
 import datetime
 
@@ -16,7 +17,8 @@ from kafka_lib.kafkaProducer import publish_successful_bid, publish_bid_update
 
 
 # Load environment variables
-load_dotenv()
+env_path = Path(__file__).resolve().parents[1] / '.env'
+load_dotenv(dotenv_path=env_path)
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
