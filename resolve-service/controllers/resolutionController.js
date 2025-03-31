@@ -57,7 +57,7 @@ exports.resolveListingManually = async (req, res) => {
     }
     
     // Get the listing details from the listing service
-    const listingServiceUrl = process.env.LISTING_SERVICE_URL || 'http://list-service:3001';
+    const listingServiceUrl = process.env.LISTING_SERVICE_URL;
     const listingResponse = await axios.get(`${listingServiceUrl}/api/listings/${listingId}`);
     
     if (!listingResponse.data) {
@@ -67,7 +67,7 @@ exports.resolveListingManually = async (req, res) => {
     const listing = listingResponse.data;
     
     // Get the highest bid from the bidding service
-    const biddingServiceUrl = process.env.BIDDING_SERVICE_URL || 'http://bid-service:3002';
+    const biddingServiceUrl = process.env.BIDDING_SERVICE_URL;
     const bidsResponse = await axios.get(`${biddingServiceUrl}/api/bids/highest/${listingId}`);
     
     // Create resolution record

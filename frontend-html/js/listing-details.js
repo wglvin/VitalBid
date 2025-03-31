@@ -84,8 +84,13 @@ document.addEventListener('DOMContentLoaded', function() {
         titleElement.textContent = listing.name;
         idElement.textContent = `ID: ${listing.listing_id}`;
         
-        // Set status badge
-        const isActive = listing.status === 'active';
+        // Check if listing is expired based on end time
+        const currentTime = new Date();
+        const expiryTime = new Date(listing.time_end);
+        const isExpired = currentTime > expiryTime;
+        
+        // Set status badge based on expiry
+        const isActive = !isExpired;
         statusElement.textContent = isActive ? 'Active' : 'Ended';
         statusElement.classList.add(isActive ? 'status-active' : 'status-ended');
         
@@ -100,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formCurrentBid.textContent = `$${listing.start_bid.toLocaleString()} (starting bid)`;
         }
         
-        endTimeElement.textContent = new Date(listing.time_end).toLocaleString();
+        endTimeElement.textContent = expiryTime.toLocaleString();
         bidsCountElement.textContent = listing.bids_count;
         
         // Set description
@@ -113,29 +118,52 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("Listing data:", listing);
         console.log("Current user ID:", currentUserId);
         console.log("Listing owner_id:", listing.owner_id);
+        console.log("Is listing expired?", isExpired);
         
         // Check if the listing has an owner_id property and if it matches the current user ID
         isListingOwner = (listing.owner_id === currentUserId);
         console.log("Is current user the owner?", isListingOwner);
         
-        // If user is the listing owner, show accept bid buttons
+        // If user is the listing owner AND the listing is not expired, show owner controls
         const ownerControls = document.getElementById('owner-controls');
-        if (isListingOwner) {
-            console.log("Showing owner controls");
+        if (isListingOwner && isActive) {
+            console.log("Showing owner controls - listing is active and user is owner");
             ownerControls.classList.remove('hidden');
         } else {
-            console.log("Owner controls remain hidden");
-            // For debugging purposes, temporarily force-show the owner controls
-            // ownerControls.classList.remove('hidden'); // Uncomment this for testing
+            console.log("Owner controls remain hidden - " + 
+                (isExpired ? "listing is expired" : "user is not the owner"));
+            ownerControls.classList.add('hidden');
         }
         
-        // Render bid history
-        renderBidHistory(listing.bids);
+        // Pass the isActive flag to renderBidHistory to control accept button visibility
+        renderBidHistory(listing.bids, isActive);
         
         // Show/hide bid form based on listing status
         if (!isActive) {
             placeBidForm.classList.add('hidden');
+            
+            // Add an expired notice in place of the bid form
+            const expiredNotice = document.createElement('div');
+            expiredNotice.id = 'expired-notice';
+            expiredNotice.className = 'bg-gray-100 rounded-lg p-4 text-center';
+            expiredNotice.innerHTML = `
+                <p class="text-gray-700 font-medium">This listing has ended</p>
+                <p class="text-gray-500 text-sm mt-1">Bidding is no longer available for this item.</p>
+                <p class="text-gray-500 text-sm mt-1">Listing expired on ${expiryTime.toLocaleString()}</p>
+            `;
+            
+            // Insert the notice after the hidden form
+            placeBidForm.insertAdjacentElement('afterend', expiredNotice);
+            
         } else {
+            placeBidForm.classList.remove('hidden');
+            
+            // Remove expired notice if it exists
+            const existingNotice = document.getElementById('expired-notice');
+            if (existingNotice) {
+                existingNotice.remove();
+            }
+            
             // Set minimum bid amount
             const minimumBid = listing.current_bid ? listing.current_bid + 1 : listing.start_bid;
             bidAmountInput.min = minimumBid;
@@ -144,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Render bid history
-    function renderBidHistory(bids) {
+    function renderBidHistory(bids, isActive) {
         if (!bids || bids.length === 0) {
             noBidsMessage.classList.remove('hidden');
             bidsList.classList.add('hidden');
@@ -169,15 +197,26 @@ document.addEventListener('DOMContentLoaded', function() {
             clone.querySelector('.bid-id').textContent = `Bidder #${bid.bidder_id}`;
             clone.querySelector('.bid-time').textContent = new Date(bid.bid_time).toLocaleString();
             
-            // Set a default status for now to retrieve from resolving service later
-            const bidStatus = 'active';
-
+            // Get the status element
             const statusElement = clone.querySelector('.bid-status');
-            statusElement.textContent = bidStatus;
-            statusElement.classList.add(`bid-status-${bidStatus.toLowerCase()}`);
             
-            // Add accept button for active bids if user is the listing owner
-            if (isListingOwner && bidStatus === 'active') {
+            // Check if bid has a meaningful status (e.g., 'accepted')
+            // First check if bid has an explicit 'accepted' property that might come from the resolve service
+            let isAccepted = bid.accepted === true || bid.status === 'accepted';
+            
+            // If the bid is accepted, show the status
+            if (isAccepted) {
+                statusElement.textContent = 'Accepted';
+                statusElement.classList.add('bid-status-accepted');
+                statusElement.classList.remove('hidden');
+            } else {
+                // Otherwise hide the status element
+                statusElement.classList.add('hidden');
+            }
+            
+            // Add accept button for bids if user is the listing owner AND listing is active
+            // Only show the accept button if the bid is not already accepted
+            if (isListingOwner && isActive && !isAccepted) {
                 const acceptButton = document.createElement('button');
                 acceptButton.textContent = 'Accept Bid';
                 acceptButton.classList.add('accept-bid-btn', 'ml-2', 'px-2', 'py-1', 'text-xs', 
@@ -188,8 +227,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     try {
                         console.log("Accepting bid:", bid.bid_id);
                         await acceptBid(bid.bid_id);
-                        // Refresh the page to show updated statuses
-                        window.location.reload();
+                        
+                        // Show immediate visual feedback before reload
+                        statusElement.textContent = 'Accepted';
+                        statusElement.classList.add('bid-status-accepted');
+                        statusElement.classList.remove('hidden');
+                        
+                        // Remove the accept button
+                        acceptButton.remove();
+                        
+                        // Short delay before refresh to show the status change
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                        
                     } catch (error) {
                         console.error('Error accepting bid:', error);
                         showError('Failed to accept bid: ' + error.message);
@@ -209,10 +260,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Function to accept a bid
+    // Function to accept a bid - update to include detailed error handling
     async function acceptBid(bidId) {
         try {
+            console.log(`Making API call to accept bid ID: ${bidId}`);
             const response = await apiService.acceptBid(bidId);
+            console.log('API response from acceptBid:', response);
             return response;
         } catch (error) {
             console.error('Error accepting bid:', error);
@@ -251,6 +304,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
+            // Check if the listing is expired (additional client-side validation)
+            const listingData = await apiService.getListingById(listingId);
+            const currentTime = new Date();
+            const expiryTime = new Date(listingData.time_end || listingData.expiryDate);
+            
+            if (currentTime > expiryTime) {
+                showBidError('This listing has expired. Bidding is no longer available.');
+                // Refresh the page to show the expired status
+                setTimeout(() => window.location.reload(), 2000);
+                return;
+            }
+            
             // Get user data from localStorage instead of hardcoding bidderId
             const userData = JSON.parse(localStorage.getItem("userData") || '{"userid": 1, "email": "guest@example.com", "username": "Guest"}');
             console.log("Using user data for bid placement:", userData);
@@ -265,13 +330,28 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.reload();
         } catch (error) {
             console.error('Error placing bid:', error);
-            showBidError(error.message || 'Failed to place bid');
+            
+            // Check if the error contains a message about the listing being expired
+            if (error.message && error.message.toLowerCase().includes('expired')) {
+                showBidError('This listing has expired. Bidding is no longer available.');
+                // Refresh the page to update the UI
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showBidError(error.message || 'Failed to place bid');
+            }
         }
     });
         
     function showBidError(message) {
         bidErrorElement.textContent = message;
         bidErrorElement.classList.remove('hidden');
+        
+        // Style the error more prominently for expired listings
+        if (message.toLowerCase().includes('expired')) {
+            bidErrorElement.classList.add('font-medium', 'py-2');
+        } else {
+            bidErrorElement.classList.remove('font-medium', 'py-2');
+        }
     }
     
     // Handle tab switching
