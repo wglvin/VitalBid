@@ -22,12 +22,18 @@ async function loginUser() {
         console.log("🔍 Response:", result);
 
         if (result.success) {
-            showToast(result.message, "success");
             // Store both token and full response data
             localStorage.setItem("authToken", result.token);
             localStorage.setItem("userData", JSON.stringify(result));
-            // index.html can be replaced by testingRedirect for testing purpose
-            setTimeout(() => window.location.href = "../index.html", 3500);
+            
+            showToast(result.message, "success");
+            console.log("✅ Login successful - stored in localStorage:", {
+                token: result.token,
+                userData: result
+            });
+            
+            // Redirect to index.html after toast shows
+            setTimeout(() => window.location.href = "index.html", 3500);
         } else {
             showToast(result.reason || "Login failed", "warning");
         }

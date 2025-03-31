@@ -225,7 +225,7 @@
      */
     async function fetchPaymentDetails(paymentIntentId) {
       try {
-        const response = await fetch(`http://localhost:5002/v1/payment_intents/${paymentIntentId}`, {
+        const response = await fetch(`http://localhost:8000/payments/v1/payment_intents/${paymentIntentId}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         });
