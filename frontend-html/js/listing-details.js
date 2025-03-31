@@ -91,12 +91,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentTime = new Date();
         const expiryTime = new Date(listing.time_end);
         const isExpired = currentTime > expiryTime;
+
+        if (!isExpired) {
+            monitorExpiry(listing.time_end); // Only monitor if still active
+        }
         
         // Set status badge based on expiry
         const isActive = !isExpired;
+        // statusElement.textContent = isActive ? 'Active' : 'Ended';
+        // statusElement.classList.add(isActive ? 'status-active' : 'status-ended');
+
         statusElement.textContent = isActive ? 'Active' : 'Ended';
+
+        statusElement.classList.remove('status-active', 'status-ended');
         statusElement.classList.add(isActive ? 'status-active' : 'status-ended');
-        
+
+        // Animate badge
+        statusElement.classList.add('transition-all', 'duration-500', 'scale-105');
+        setTimeout(() => {
+        statusElement.classList.remove('scale-105');
+        }, 300);
+
         // Set pricing and time data
         startBidElement.textContent = `$${listing.start_bid.toLocaleString()}`;
         
@@ -137,40 +152,53 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Pass the isActive flag to renderBidHistory to control accept button visibility
         renderBidHistory(listing.bids, isActive);
+
+        if (isExpired && listing.bids && listing.bids.length > 0) {
+            const winnerContainer = document.getElementById('winner-section-container');
+            if (winnerContainer) {
+                winnerContainer.innerHTML = ''; // Clear old content
         
-        // Show/hide bid form based on listing status
-        if (!isActive) {
-            placeBidForm.classList.add('hidden');
+                const topBid = [...listing.bids].sort((a, b) => b.bid_amt - a.bid_amt)[0];
+        
+                const winnerSection = document.createElement('div');
+                winnerSection.className = 'bg-yellow-100 p-4 mt-4 rounded-lg text-center shadow';
+                winnerSection.innerHTML = `
+                    <p class="text-yellow-800 font-semibold">🏆 Winner: Bidder #${topBid.bidder_id}</p>
+                    <p class="text-yellow-700 text-sm mt-1">Winning Bid: $${topBid.bid_amt.toLocaleString()}</p>
+                `;
+        
+                winnerContainer.appendChild(winnerSection);
             
-            // Add an expired notice in place of the bid form
-            const expiredNotice = document.createElement('div');
-            expiredNotice.id = 'expired-notice';
-            expiredNotice.className = 'bg-gray-100 rounded-lg p-4 text-center';
-            expiredNotice.innerHTML = `
-                <p class="text-gray-700 font-medium">This listing has ended</p>
-                <p class="text-gray-500 text-sm mt-1">Bidding is no longer available for this item.</p>
-                <p class="text-gray-500 text-sm mt-1">Listing expired on ${expiryTime.toLocaleString()}</p>
-            `;
-            
-            // Insert the notice after the hidden form
-            placeBidForm.insertAdjacentElement('afterend', expiredNotice);
-            
-        } else {
+            }
+            } else {
             placeBidForm.classList.remove('hidden');
-            
-            // Remove expired notice if it exists
+        
             const existingNotice = document.getElementById('expired-notice');
             if (existingNotice) {
                 existingNotice.remove();
             }
-            
-            // Set minimum bid amount
+        
             const minimumBid = listing.current_bid ? listing.current_bid + 1 : listing.start_bid;
             bidAmountInput.min = minimumBid;
             bidAmountInput.placeholder = minimumBid.toLocaleString();
-        }
-    }
-    
+        }  
+    }      
+
+    function monitorExpiry(expiryTime) {
+        const expiryDate = new Date(expiryTime);
+        const interval = setInterval(() => {
+          const now = new Date();
+          if (now >= expiryDate) {
+            clearInterval(interval);
+            console.log("⏰ Listing has expired. Updating UI...");
+
+            //
+            showToast("Auction has ended.")
+            fetchListingDetails(); // Re-fetch to rerender with expired state
+          }
+        }, 1000); // check every second
+      }
+      
     // Render bid history
     function renderBidHistory(bids, isActive) {
         if (!bids || bids.length === 0) {
@@ -324,7 +352,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const bidderId = userData.userid;
             console.log("Using bidder ID:", bidderId);
             
-            // const response = await apiService.placeBid(listingId, bidderId, bidAmount);
             
             // // Refresh the page to show the new bid
             // window.location.reload();
@@ -357,6 +384,19 @@ document.addEventListener('DOMContentLoaded', function() {
             bidErrorElement.classList.remove('font-medium', 'py-2');
         }
     }
+
+    function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.classList.remove("opacity-0");
+        toast.classList.add("opacity-100");
+      
+        setTimeout(() => {
+          toast.classList.remove("opacity-100");
+          toast.classList.add("opacity-0");
+        }, 3000); // hide after 3 seconds
+      }
+
     
     // Handle tab switching
     tabBids.addEventListener('click', function() {
@@ -398,4 +438,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize the page
     fetchListingDetails();
+
+    
 });

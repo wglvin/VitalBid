@@ -164,4 +164,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize the page
     fetchListings();
+
+    setInterval(() => {
+        console.log("🔁 Checking for listing status updates...");
+        fetchListings(); // Re-fetch listings to reflect expired ones
+      }, 30000); // check every 30 seconds
+      
 }); 
