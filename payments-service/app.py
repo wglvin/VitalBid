@@ -251,6 +251,7 @@ if __name__ == '__main__':
     port = 5002
     logger.info(f"Starting Flask app on port {port}")
     # Use debug=True to see more detailed errors
+    port = int(os.getenv('PORT', 5002))
     app.run(host='0.0.0.0', port=port)
 else:
     # Log if the file is being imported rather than run directly
