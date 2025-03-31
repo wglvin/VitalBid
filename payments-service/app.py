@@ -14,8 +14,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Import the Kafka functions
 from kafka_lib.kafkaProducer import publish_successful_bid, publish_bid_update
 
-
-
 # Load environment variables
 env_path = Path(__file__).resolve().parents[1] / '.env'
 load_dotenv(dotenv_path=env_path)
@@ -49,14 +47,11 @@ def create_payment_intent():
         if not bid_id:
             return jsonify({'error': 'Bid ID is required'}), 400
         
-        # Create payment intent with Stripe
+        # Create payment intent with Stripe - changing confirm to False to follow standard flow
         intent = stripe.PaymentIntent.create(
             amount=int(amount * 100),  # Stripe expects amount in cents
             currency=currency,
-            metadata={'bid_id': bid_id},
-            confirm=True, 
-            payment_method='pm_card_visa', 
-            return_url=f"{request.headers.get('Origin', 'http://localhost:5002')}/payment-complete.html"
+            metadata={'bid_id': bid_id}
         )
         
         # Store payment intent with bid information
@@ -144,13 +139,55 @@ def confirm_payment_intent(payment_intent_id):
                 'id': intent.id,
                 'status': intent.status,
                 'message': 'Payment has not succeeded yet'
-            }), 400
+            }), 200  # Changed from 400 to 200 to avoid error state
             
     except stripe.error.StripeError as e:
         logger.error(f"Stripe error: {str(e)}")
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         logger.error(f"Error confirming payment intent: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+# New endpoint to check payment status
+@app.route('/v1/payment_intents/<payment_intent_id>/status', methods=['GET'])
+def check_payment_status(payment_intent_id):
+    """Check the status of a payment intent"""
+    try:
+        # Try to retrieve from local storage first
+        if payment_intent_id in payment_intents:
+            # But still verify with Stripe to get the most up-to-date status
+            intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+            payment_intents[payment_intent_id]['status'] = intent.status
+            
+            return jsonify({
+                'id': intent.id,
+                'status': intent.status,
+                'client_secret': payment_intents[payment_intent_id]['client_secret']
+            }), 200
+        else:
+            # If not in local storage, get from Stripe
+            intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+            
+            # Store it for future reference
+            payment_intents[payment_intent_id] = {
+                'id': intent.id,
+                'status': intent.status,
+                'client_secret': intent.client_secret,
+                'amount': intent.amount / 100,
+                'currency': intent.currency
+            }
+            
+            return jsonify({
+                'id': intent.id,
+                'status': intent.status,
+                'client_secret': intent.client_secret
+            }), 200
+            
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error checking payment status: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error checking payment status: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/v1/bids/<bid_id>/update', methods=['POST'])

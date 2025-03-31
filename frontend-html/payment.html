@@ -302,243 +302,286 @@
     
   </div>
 
-  <script>
+<script> 
+
     // Initialize Stripe with your publishable key
     const stripe = Stripe('pk_test_51R2REVRoJbU4bIcvlsl3kwcRAEDMEdO6zZ0wAGV9nJhIfpKaJTiyN8rAmvoOXYGl0oXsZDGv3eBP1KEfGqXTCJzT000fu9PlVV');
     
+    // Global variables to store payment intent data
     let paymentIntentId = null;
-    let paymentIntentData = null;
-
+    let paymentIntentClientSecret = null;
+    
     // Create Stripe Elements
     const elements = stripe.elements();
     const cardElement = elements.create('card', {
-    style: {
+      style: {
         base: {
-        fontSize: '16px',
-        color: '#333',
-        fontFamily: 'Inter, sans-serif',
-        '::placeholder': {
+          fontSize: '16px',
+          color: '#333',
+          fontFamily: 'Inter, sans-serif',
+          '::placeholder': {
             color: '#aab7c4',
-        },
+          },
         },
         invalid: {
-        color: '#ff6c6c',
-        iconColor: '#ff6c6c',
+          color: '#ff6c6c',
+          iconColor: '#ff6c6c',
         },
-    },
+      },
     });
-
+    
     /**
      * Parse query parameters from URL
      * @returns {Object} Object containing listingId, listingTitle, and amount
      */
     function getQueryParams() {
-    const params = new URLSearchParams(window.location.search);
-    return {
+      const params = new URLSearchParams(window.location.search);
+      return {
         listingId: params.get('listingId'),
         listingTitle: params.get('listingTitle'),
         amount: parseFloat(params.get('amount') || '210.00')
-    };
+      };
     }
-
+    
     /**
      * Create a payment intent on the server
      * @param {string} bidId - The ID of the bid/listing
      * @param {number} amount - The payment amount
-     * @returns {Promise<string>} Promise resolving to payment intent ID
+     * @returns {Promise<Object>} Promise resolving to payment intent data
      */
     async function createPaymentIntent(bidId, amount) {
-    try {
+      try {
         const response = await fetch('http://localhost:5002/v1/payment_intents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, currency: 'usd', bid_id: bidId })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount, currency: 'usd', bid_id: bidId })
         });
         
         const data = await response.json();
         
         if (!response.ok) {
-        throw new Error(data.error || 'Failed to create payment intent');
+          throw new Error(data.error || 'Failed to create payment intent');
         }
         
+        console.log("Payment intent created successfully:", data);
+        // Store the payment intent ID and client secret
+        paymentIntentId = data.id;
+        paymentIntentClientSecret = data.client_secret;
+        
         return data;
-
-    } catch (err) {
+      } catch (err) {
         console.error("Payment intent creation failed:", err);
         document.getElementById('card-errors').textContent = err.message;
         return null;
+      }
     }
-    }
-
+    
     /**
-    * Confirm a card payment with Stripe
-    * @param {string} clientSecret - The client secret of the payment intent
-    * @param {string} cardholderName - Name of the cardholder
-    */
-    async function confirmPayment(clientSecret, cardholderName, listingId, listingTitle, amount) {
-        try {
-            const result = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: {
-                card: cardElement,
-                billing_details: {
-                name: cardholderName || 'User'
-                }
-            }
-            });
-
-            if (result.error) {
-            document.getElementById('card-errors').textContent = result.error.message;
-            } else if (result.paymentIntent.status === 'succeeded') {
-            window.location.href = `payment_confirmation.html?payment_intent=${result.paymentIntent.id}&listingId=${encodeURIComponent(listingId)}&listingTitle=${encodeURIComponent(listingTitle)}&amount=${encodeURIComponent(amount)}`;
-            }
-        } catch (err) {
-            document.getElementById('card-errors').textContent = err.message;
-        }
-    }
-
-  
-
-    /**
-     * Handle PayPal payment method
+     * Confirm a card payment with Stripe
+     * @param {string} clientSecret - The client secret of the payment intent
+     * @param {string} cardholderName - Name of the cardholder
      */
-    // function handlePayPalPayment() {
-    // alert('Redirecting to PayPal...');
-    // // Implement PayPal redirect logic here
-    // // This would typically involve creating a PayPal order on your server
-    // // and then redirecting the user to the PayPal approval URL
-    // }
-
+    async function confirmPayment(clientSecret, cardholderName, listingId, listingTitle, amount) {
+      try {
+        console.log("Confirming payment with client secret:", clientSecret);
+        
+        const result = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: {
+            card: cardElement,
+            billing_details: {
+              name: cardholderName || 'User'
+            }
+          }
+        });
+    
+        if (result.error) {
+          console.error("Payment confirmation error:", result.error);
+          document.getElementById('card-errors').textContent = result.error.message;
+        } else {
+          console.log("Payment result:", result);
+          
+          if (result.paymentIntent.status === 'succeeded') {
+            console.log("Payment succeeded, redirecting to confirmation page");
+            window.location.href = `payment_confirmation.html?payment_intent=${result.paymentIntent.id}&listingId=${encodeURIComponent(listingId)}&listingTitle=${encodeURIComponent(listingTitle)}&amount=${encodeURIComponent(amount)}`;
+          } else if (result.paymentIntent.status === 'requires_action') {
+            // Handle authentication required
+            console.log("Payment requires additional action");
+            handlePaymentAction(result.paymentIntent);
+          } else {
+            console.log("Payment status:", result.paymentIntent.status);
+            // Check payment status on server
+            checkPaymentStatus(result.paymentIntent.id, listingId, listingTitle, amount);
+          }
+        }
+      } catch (err) {
+        console.error("Error during payment confirmation:", err);
+        document.getElementById('card-errors').textContent = "Payment processing error: " + err.message;
+      }
+    }
+    
+    /**
+     * Handle additional payment actions if required (like 3D Secure)
+     */
+    async function handlePaymentAction(paymentIntent) {
+      const { error, paymentIntent: updatedPaymentIntent } = await stripe.handleCardAction(
+        paymentIntent.client_secret
+      );
+    
+      if (error) {
+        document.getElementById('card-errors').textContent = error.message;
+      } else {
+        // The card action has been handled
+        if (updatedPaymentIntent.status === 'requires_confirmation') {
+          // The payment requires confirmation
+          console.log("Payment requires confirmation after action");
+        } else if (updatedPaymentIntent.status === 'succeeded') {
+          const { listingId, listingTitle, amount } = getQueryParams();
+          window.location.href = `payment_confirmation.html?payment_intent=${updatedPaymentIntent.id}&listingId=${encodeURIComponent(listingId)}&listingTitle=${encodeURIComponent(listingTitle)}&amount=${encodeURIComponent(amount)}`;
+        } else {
+          // Check payment status on server
+          const { listingId, listingTitle, amount } = getQueryParams();
+          checkPaymentStatus(updatedPaymentIntent.id, listingId, listingTitle, amount);
+        }
+      }
+    }
+    
+    /**
+     * Check the payment status on the server
+     */
+    async function checkPaymentStatus(paymentIntentId, listingId, listingTitle, amount) {
+      try {
+        const response = await fetch(`http://localhost:5002/v1/payment_intents/${paymentIntentId}/status`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to check payment status');
+        }
+        
+        console.log("Payment status check:", data);
+        
+        if (data.status === 'succeeded') {
+          window.location.href = `payment_confirmation.html?payment_intent=${paymentIntentId}&listingId=${encodeURIComponent(listingId)}&listingTitle=${encodeURIComponent(listingTitle)}&amount=${encodeURIComponent(amount)}`;
+        } else {
+          document.getElementById('card-errors').textContent = `Payment status: ${data.status}. Please try again.`;
+        }
+      } catch (err) {
+        console.error("Error checking payment status:", err);
+        document.getElementById('card-errors').textContent = "Error checking payment status: " + err.message;
+      }
+    }
+    
     /**
      * Initialize the payment form
      */
     document.addEventListener('DOMContentLoaded', async () => {
-    // Parse URL parameters
-    const { listingId, listingTitle, amount } = getQueryParams();
-    
-    // Update UI with payment information
-    const amountElement = document.getElementById('paymentAmount');
-    if (amountElement) {
+      // Parse URL parameters
+      const { listingId, listingTitle, amount } = getQueryParams();
+      
+      // Update UI with payment information
+      const amountElement = document.getElementById('paymentAmount');
+      if (amountElement) {
         amountElement.textContent = amount ? amount.toFixed(2) : '210.00';
-    }
-
-    // Populate order details
-    const orderListingIdElement = document.getElementById('orderListingId');
-    if (orderListingIdElement && listingId) {
+      }
+    
+      // Populate order details
+      const orderListingIdElement = document.getElementById('orderListingId');
+      if (orderListingIdElement && listingId) {
         orderListingIdElement.textContent = listingId;
-    }
-    
-    const orderListingTitleElement = document.getElementById('orderListingTitle');
-    if (orderListingTitleElement && listingTitle) {
+      }
+      
+      const orderListingTitleElement = document.getElementById('orderListingTitle');
+      if (orderListingTitleElement && listingTitle) {
         orderListingTitleElement.textContent = listingTitle;
-    }
-    
-    const orderAmountElement = document.getElementById('orderAmount');
-    if (orderAmountElement) {
+      }
+      
+      const orderAmountElement = document.getElementById('orderAmount');
+      if (orderAmountElement) {
         orderAmountElement.textContent = amount ? amount.toFixed(2) : '210.00';
-    }
-
-    // Toggle order details visibility
-    const viewOrderToggle = document.getElementById('viewOrderToggle');
-    const orderDetails = document.getElementById('orderDetails');
+      }
     
-    if (viewOrderToggle && orderDetails) {
+      // Toggle order details visibility
+      const viewOrderToggle = document.getElementById('viewOrderToggle');
+      const orderDetails = document.getElementById('orderDetails');
+      
+      if (viewOrderToggle && orderDetails) {
+        orderDetails.style.display = 'none'; // Initially hide order details
         viewOrderToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            const isVisible = orderDetails.style.display === 'block';
-            orderDetails.style.display = isVisible ? 'none' : 'block';
-            viewOrderToggle.textContent = isVisible ? 'View detailed order' : 'Hide order details';
+          e.preventDefault();
+          const isVisible = orderDetails.style.display === 'block';
+          orderDetails.style.display = isVisible ? 'none' : 'block';
+          viewOrderToggle.textContent = isVisible ? 'View detailed order' : 'Hide order details';
         });
-    }
-    
-    
-    const itemNameElement = document.getElementById('paymentItemName');
-    if (itemNameElement && listingTitle) {
-        itemNameElement.textContent = listingTitle;
-    }
-    
-    const bidIdElement = document.getElementById('paymentBidId');
-    if (bidIdElement && listingId) {
-        bidIdElement.textContent = listingId;
-    }
-    
-    // Mount the card element
-    const cardElementContainer = document.getElementById('card-element');
-    if (cardElementContainer) {
+      }
+      
+      // Mount the card element
+      const cardElementContainer = document.getElementById('card-element');
+      if (cardElementContainer) {
         cardElement.mount(cardElementContainer);
         
         // Handle card element validation errors
         cardElement.addEventListener('change', function(event) {
-        const displayError = document.getElementById('card-errors');
-        if (displayError) {
+          const displayError = document.getElementById('card-errors');
+          if (displayError) {
             displayError.textContent = event.error ? event.error.message : '';
-        }
+          }
         });
-    }
-    
-    // Create payment intent if we have a listing ID
-    let paymentIntentData = null;
-        if (listingId) {
-            try {
-            paymentIntentData = await createPaymentIntent(listingId, amount || 210.00);
-            } catch (err) {
-            console.error(err);
-            }
+      }
+      
+      // Create payment intent if we have a listing ID
+      if (listingId) {
+        try {
+          const data = await createPaymentIntent(listingId, amount || 210.00);
+          console.log("Payment intent data:", data);
+          
+          if (!data || !data.client_secret) {
+            throw new Error("Could not create payment intent");
+          }
+        } catch (err) {
+          console.error("Error creating payment intent:", err);
+          document.getElementById('card-errors').textContent = "Error setting up payment: " + err.message;
         }
-    
-    // Set up event listeners for payment method selection
-    const paypalRadio = document.getElementById('paypalPayment');
-    if (paypalRadio) {
-        paypalRadio.addEventListener('change', function() {
-        const cardFields = document.querySelector('.card-fields');
-        if (cardFields) {
-            cardFields.style.display = this.checked ? 'none' : 'block';
-        }
-        
-        const paypalInfo = document.querySelector('.paypal-info');
-        if (paypalInfo) {
-            paypalInfo.style.display = this.checked ? 'block' : 'none';
-        }
-        });
-    }
-    
-    // Set up cancel button if it exists
-    const cancelButton = document.getElementById('cancelPaymentBtn');
-    if (cancelButton) {
-        cancelButton.addEventListener('click', function() {
-        window.history.back();
-        });
-    }
+      }
     });
-
+    
     /**
- * Handle form submission
- */
+     * Handle form submission
+     */
     const paymentForm = document.getElementById('paymentForm');
-        if (paymentForm) {
-            paymentForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const nameOnCardElement = document.getElementById('card-name');
-            const nameOnCard = nameOnCardElement ? nameOnCardElement.value : 'User';
-
-        if (!nameOnCard) {
-            document.getElementById('card-errors').textContent = 'Please enter the name on your card';
-            return;
-        }
-
-        if (paymentIntentData && paymentIntentData.client_secret) {
-            const { listingId, listingTitle, amount } = getQueryParams();
-            confirmPayment(paymentIntentData.client_secret, nameOnCard, listingId, listingTitle, amount);
-        } else {
-            document.getElementById('card-errors').textContent = 'Payment setup failed. Please try again.';
-        }
+    if (paymentForm) {
+      paymentForm.addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        });
-
+        console.log("Form submitted. Payment intent client secret:", paymentIntentClientSecret);
+    
+        const nameOnCardElement = document.getElementById('card-name');
+        const nameOnCard = nameOnCardElement ? nameOnCardElement.value : 'User';
+    
+        if (!nameOnCard) {
+          document.getElementById('card-errors').textContent = 'Please enter the name on your card';
+          return;
+        }
+    
+        if (paymentIntentClientSecret) {
+          const { listingId, listingTitle, amount } = getQueryParams();
+          confirmPayment(paymentIntentClientSecret, nameOnCard, listingId, listingTitle, amount);
+        } else {
+          document.getElementById('card-errors').textContent = 'Payment setup failed. Please reload the page and try again.';
+        }
+      });
     }
 
-    
-  </script>
+
+
+
+</script>
+
+
+
+
 </body>
 </html>
 
