@@ -1,5 +1,7 @@
 const { Bid } = require('../models');
 const axios = require('axios');
+const { executeQuery } = require('../config/database');
+
 
 // Create a new bid
 exports.createBid = async (req, res) => {
@@ -16,10 +18,73 @@ exports.createBid = async (req, res) => {
       return res.status(400).json({ message: 'Bid amount must be greater than zero' });
     }
     
+    // Fetch listing details to check expiry date
+    try {
+      // Get the URL from environment variable
+      const listingServiceUrl = process.env.LISTING_SERVICE_URL;
+      console.log('Using listing service URL:', listingServiceUrl); // Debug log
+
+      if (!listingServiceUrl) {
+        throw new Error('LISTING_SERVICE_URL environment variable is not set');
+      }
+
+      const response = await axios.get(`${listingServiceUrl}/api/listings/${listingId}`);
+      const listing = response.data;
+      
+      // Check if listing exists
+      if (!listing) {
+        return res.status(404).json({ message: 'Listing not found' });
+      }
+      
+      // Check if listing is expired
+      const currentTime = new Date();
+      console.log(listing);
+      const expiryTime = new Date(listing.expiryDate || listing.time_end);
+      
+      if (currentTime > expiryTime) {
+        return res.status(400).json({ 
+          message: 'Cannot place bid on expired listing',
+          expiryTime: expiryTime.toISOString(),
+          currentTime: currentTime.toISOString()
+        });
+      }
+      
+      // Continue with bid placement if listing is not expired
+    } catch (error) {
+      console.error('Error fetching listing details:', error);
+      
+      // If we can't access the listing service, proceed with bid placement
+      // This is a fallback to prevent complete failure if the listing service is down
+      console.warn('Could not verify listing expiry date. Proceeding with bid placement.');
+    }
+    
+    // Check if the bid amount is higher than the current highest bid
+    try {
+      // Get the highest bid for this listing
+      const highestBidQuery = `
+        SELECT amount FROM bids 
+        WHERE listingId = ? 
+        ORDER BY amount DESC 
+        LIMIT 1
+      `;
+      const highestBids = await executeQuery(highestBidQuery, [listingId]);
+      const highestBid = highestBids[0]?.amount || 0;
+      
+      if (parseFloat(amount) <= parseFloat(highestBid)) {
+        return res.status(400).json({ 
+          message: 'Bid amount must be higher than the current highest bid',
+          currentHighestBid: parseFloat(highestBid)
+        });
+      }
+    } catch (error) {
+      console.error('Error checking highest bid:', error);
+      // Continue with bid placement if we can't check the highest bid
+    }
+    
     // Convert types to match database schema
     const bidData = {
       listingId: parseInt(listingId),
-      bidderId: parseInt(bidderId), // Convert to integer
+      bidderId: parseInt(bidderId), 
       amount: parseFloat(amount),
       bidTime: new Date()
     };
