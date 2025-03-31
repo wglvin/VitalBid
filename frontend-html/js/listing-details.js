@@ -169,12 +169,15 @@ document.addEventListener('DOMContentLoaded', function() {
             clone.querySelector('.bid-id').textContent = `Bidder #${bid.bidder_id}`;
             clone.querySelector('.bid-time').textContent = new Date(bid.bid_time).toLocaleString();
             
+            // Set a default status for now to retrieve from resolving service later
+            const bidStatus = 'active';
+
             const statusElement = clone.querySelector('.bid-status');
-            statusElement.textContent = bid.status;
-            statusElement.classList.add(`bid-status-${bid.status.toLowerCase()}`);
+            statusElement.textContent = bidStatus;
+            statusElement.classList.add(`bid-status-${bidStatus.toLowerCase()}`);
             
             // Add accept button for active bids if user is the listing owner
-            if (isListingOwner && bid.status === 'active') {
+            if (isListingOwner && bidStatus === 'active') {
                 const acceptButton = document.createElement('button');
                 acceptButton.textContent = 'Accept Bid';
                 acceptButton.classList.add('accept-bid-btn', 'ml-2', 'px-2', 'py-1', 'text-xs', 
@@ -248,9 +251,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
-            // Hardcoded bidder ID for demonstration - in a real app, this would come from user authentication
-            // need to retrieve from user authentication in the future
-            const bidderId = 1;
+            // Get user data from localStorage instead of hardcoding bidderId
+            const userData = JSON.parse(localStorage.getItem("userData") || '{"userid": 1, "email": "guest@example.com", "username": "Guest"}');
+            console.log("Using user data for bid placement:", userData);
+            
+            // Use userid from userData as the bidderId
+            const bidderId = userData.userid;
+            console.log("Using bidder ID:", bidderId);
             
             const response = await apiService.placeBid(listingId, bidderId, bidAmount);
             
@@ -261,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showBidError(error.message || 'Failed to place bid');
         }
     });
-    
+        
     function showBidError(message) {
         bidErrorElement.textContent = message;
         bidErrorElement.classList.remove('hidden');

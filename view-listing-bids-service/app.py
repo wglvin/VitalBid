@@ -118,8 +118,7 @@ def get_listings_with_bids():
                         'bid_id': bid['id'],
                         'bid_amt': float(bid['amount']),
                         'bidder_id': bid['bidderId'],
-                        'bid_time': bid['bidTime'],
-                        'status': bid['status']
+                        'bid_time': bid['bidTime']
                     }
                     formatted_bids.append(formatted_bid)
                 
@@ -158,7 +157,7 @@ def get_listings_with_bids():
                 'description': listing['description'],
                 'time_end': listing['expiryDate'],
                 'start_bid': float(listing['startingPrice']),
-                'status': derived_status,  # Now derived from expiry date
+                'status': derived_status,  # Keep this derived status for listings
                 'organ_id': listing['organId'],
                 'owner_id': listing['ownerId'],
                 'image': listing.get('image', 'default-organ.jpg'),  # Added image with default

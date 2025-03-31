@@ -21,7 +21,6 @@ exports.createBid = async (req, res) => {
       listingId: parseInt(listingId),
       bidderId: parseInt(bidderId), // Convert to integer
       amount: parseFloat(amount),
-      status: 'active',
       bidTime: new Date()
     };
 
@@ -97,13 +96,13 @@ exports.getHighestBidForListing = async (req, res) => {
   }
 };
 
-// Accept a bid (mark as accepted)
+// Accept a bid
 exports.acceptBid = async (req, res) => {
   try {
     const bidId = req.params.id;
     const bid = await Bid.findByPk(bidId);
     
-    // Extract email and username from headers instead of query parameters
+    // Extract email and username from headers
     const email = req.headers['x-user-email'];
     const username = req.headers['x-user-name'];
     
@@ -113,24 +112,8 @@ exports.acceptBid = async (req, res) => {
       return res.status(404).json({ message: 'Bid not found' });
     }
     
-    if (bid.status !== 'active') {
-      return res.status(400).json({ message: `Cannot accept bid with status: ${bid.status}` });
-    }
-    
-    // Update this bid to accepted
-    await Bid.update({ status: 'accepted' }, { where: { id: bidId } });
-    
-    // Update all other bids for this listing to rejected
-    // We need to create a custom query for this since we don't have Op.ne
-    const updateOtherBidsSQL = `
-      UPDATE bids 
-      SET status = 'rejected', updatedAt = NOW() 
-      WHERE listingId = ? AND id != ? AND status = 'active'
-    `;
-    
-    // Execute custom query using the database module
-    const { executeQuery } = require('../config/database');
-    await executeQuery(updateOtherBidsSQL, [bid.listingId, bidId]);
+    // Instead of updating status, we'll create a bid_status record in resolving_db
+    // This would be implemented separately 
     
     // Get the updated bid
     const updatedBid = await Bid.findByPk(bidId);
@@ -178,13 +161,6 @@ exports.cancelBid = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to cancel this bid' });
     }
     
-    if (bid.status !== 'active') {
-      return res.status(400).json({ message: `Cannot cancel bid with status: ${bid.status}` });
-    }
-    
-    // Update bid status to cancelled
-    await Bid.update({ status: 'cancelled' }, { where: { id: bidId } });
-    
     // Get the updated bid
     const updatedBid = await Bid.findByPk(bidId);
     
@@ -207,14 +183,13 @@ exports.getBidHistory = async (req, res) => {
       order: [['amount', 'DESC']]
     });
 
-    // Transform to frontend format
+    // Transform to frontend format without adding status
     const frontendBids = bids.map(bid => ({
       bid_id: bid.id,
       listing_id: bid.listingId,
       bidder_id: bid.bidderId,
       bid_amt: parseFloat(bid.amount),
-      bid_time: bid.bidTime,
-      status: bid.status
+      bid_time: bid.bidTime
     }));
 
     return res.status(200).json(frontendBids);

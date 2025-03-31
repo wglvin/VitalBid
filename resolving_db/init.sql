@@ -1,3 +1,5 @@
+use resolving_db;
+
 -- Table to track resolution
 CREATE TABLE IF NOT EXISTS resolving (
     id INT AUTO_INCREMENT PRIMARY KEY,
