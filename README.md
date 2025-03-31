@@ -6,11 +6,10 @@ Our organ auction platform addresses the critical shortage of accessible organ p
 Key features of our organ auction platform include:
 1.	Secure registration for both buyers and sellers
 2.	Real-time bidding system for available organs
-3.	Emphasis on immutability, ensuring that listings cannot be tampered
-4.  Escrow of funds once a bid is placed
 
 ## Prerequisites
 - Docker 27.5.1
+- Ensure that ports to be used are not currently used by other programs
 
 ## File Structure
 Frontend Folder: Website, run by node.js
@@ -47,18 +46,24 @@ Backend Folder: Microservices, each run by flask OR node.js
 80xx: External Techology Microservices </br>
 
 ## External Ports in Use
+3000: Frontend Application </br>
 3001: List Microservice </br>
 3002: Bid Microservice </br>
 3003: Notification Microservice </br>
+3004: Resolve Microservice </br>
 3306: List Database </br>
 3307: Bid Database </br>
-5001: View Listing & Bid Service </br>
-8000: Kong API Gateway
-8001: Kong Admin
+3308: Resolve Database </br>
+5001: View Listing & Bid Microservice </br>
+5002: Payments Microservice </br>
+8000: Kong API Gateway </br>
+8001: Kong Admin </br>
+8092: Kafka Microservice </br>
+8093: Zookeeper Microservice </br>
 
 ## Frontend
 
-The application uses a simple HTML/CSS/JavaScript-based frontend served by Nginx. The frontend communicates with the backend microservices through the Kong API Gateway.
+The application uses a simple HTML/CSS/JavaScript-based frontend served by Nginx. The frontend communicates with the backend microservices through the Kong API Gateway, there is ZERO direct frontend interaction with the microservice
 
 Key features:
 - View all organ listings with filtering by status (active/ended)
@@ -68,12 +73,23 @@ Key features:
 
 The frontend is built with vanilla JavaScript and styled with TailwindCSS for a clean, responsive design.
 
+## Troubleshooting Guidelines 
+When unable to use e.g. port 3306, use the following command (in case your mysql is running):
+* 1. (Windows - kill mysql)
+```sh
+taskkill /IM mysqld.exe /F
+```
+* 1. (MacOS - find PID using)
+```sh
+sudo lsof -i :3306 
+```
+* 2. (MacOS - kill process by PID)
+```sh
+sudo kill -9 <PID>
+```
+
 ## Contributing Guidelines
 When contributing to this project, please follow these commit message guidelines:
 * For changes specific to an Image: "[Image]: [Message]"
 * For project-wide changes: "Project: [Message]"
-
-## Troubleshooting Guidelines 
-When unable to use port 3306, use the following command (in case your mysql is running):
-* taskkill /IM mysqld.exe /F 
 
