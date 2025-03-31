@@ -161,9 +161,42 @@ services:
     volumes:
       - ./view-listing-bids-service:/app
 
+  # Kafka and Zookeeper services
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 22181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "22181:22181"
+    networks:
+      - organ_network
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:22181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_CREATE_TOPICS: "listing-events:1:1,notification-events:1:1,successful-bids:1:1,bid-updates:1:1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - organ_network
+
   # Payment Microservice
   payments-service:
-    build: ./payments-service
+    build: ./payments-service 
     container_name: payments_service
     restart: always
     depends_on:
@@ -175,11 +208,12 @@ services:
       - KAFKA_BID_UPDATES_TOPIC=bid-updates
       - KAFKA_GROUP_ID=payment-service-group
     ports:
-      - "5002:5001"  # Map to 5002 on host to avoid conflict with view-listing-bids-service
+      - "5002:5002"  # Map to 5002 on host to avoid conflict with view-listing-bids-service
     networks:
       - organ_network
     volumes:
       - ./payments-service:/app
+    command: python app.py
 
   kong:
     image: kong:latest
@@ -233,34 +267,7 @@ services:
     depends_on:
       - kafka
 
-  # Kafka and Zookeeper services
-  zookeeper:
-    image: wurstmeister/zookeeper
-    container_name: zookeeper
-    ports:
-      - "2181:2181"
-    networks:
-      - organ_network
 
-  kafka:
-    image: wurstmeister/kafka
-    container_name: kafka
-    ports:
-      - "9092:9092"
-    environment:
-      # Replace these settings - KAFKA_ADVERTISED_HOST_NAME doesn't work properly
-      KAFKA_LISTENERS: PLAINTEXT://:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "listing-events:1:1,notification-events:1:1"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    depends_on:
-      - zookeeper
-    networks:
-      - organ_network
 
 networks:
   organ_network:

@@ -286,11 +286,10 @@ def health_check():
 
 
 if __name__ == '__main__':
-    # Explicitly set port to 5001 regardless of environment variable
-    port = 5002
-    logger.info(f"Starting Flask app on port {port}")
+    
     # Use debug=True to see more detailed errors
     port = int(os.getenv('PORT', 5002))
+    logger.info(f"Starting Flask app on port {port}")
     app.run(host='0.0.0.0', port=port)
 else:
     # Log if the file is being imported rather than run directly

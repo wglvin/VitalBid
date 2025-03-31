@@ -139,7 +139,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log("API response:", response);
                 
                 // Redirect to the listing page using the correct ID property
-                window.location.href = `listing-details.html?id=${response.id}`;
+                // window.location.href = `listing-details.html?id=${response.id}`;
+                window.location.href = "index.html";
             } catch (error) {
                 console.error('Error creating listing:', error);
                 showError(error.message || 'Failed to create listing');
