@@ -124,6 +124,10 @@ services:
     container_name: resolve_service
     restart: always
     depends_on:
+      list-service:
+        condition: service_started
+      bid-service:
+        condition: service_started
       resolving-db:
         condition: service_healthy
     environment:
@@ -152,8 +156,8 @@ services:
       - list-service
       - bid-service  # Add this line - it needs bids data
     environment:
-      LISTING_SERVICE_URL: ${LISTING_SERVICE_URL:-http://list-service:3001}
-      BIDDING_SERVICE_URL: ${BIDDING_SERVICE_URL:-http://bid-service:3002}
+      LISTING_SERVICE_URL: ${LISTING_SERVICE_URL}
+      BIDDING_SERVICE_URL: ${BIDDING_SERVICE_URL}
     ports:
       - "5001:5001"
     networks:

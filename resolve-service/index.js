@@ -33,9 +33,9 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log(`Resolution service running on port ${PORT}`);
       
-      // Start the resolution scheduler
-      const resolutionIntervalMinutes = process.env.RESOLUTION_INTERVAL_MINUTES || 1;
-      resolutionService.startResolutionScheduler(parseInt(resolutionIntervalMinutes));
+      // Start the resolution scheduler with 10 seconds interval
+      const resolutionIntervalSeconds = 10;  // hardcode to 10 seconds
+      resolutionService.startResolutionScheduler(resolutionIntervalSeconds);
     });
   } catch (error) {
     console.error('Failed to start resolution service:', error);

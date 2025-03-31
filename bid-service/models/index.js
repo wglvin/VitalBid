@@ -17,12 +17,6 @@ const Bid = {
         params.push(options.where.listingId);
       }
       
-      // Add status filter if present
-      // if (options.where.status) {
-      //   whereClauses.push('status = ?');
-      //   params.push(options.where.status);
-      // }
-      
       if (whereClauses.length) {
         sql += ' WHERE ' + whereClauses.join(' AND ');
       }
@@ -60,12 +54,6 @@ const Bid = {
         whereClauses.push('listingId = ?');
         params.push(options.where.listingId);
       }
-      
-      // Add status filter if present
-      // if (options.where.status) {
-      //   whereClauses.push('status = ?');
-      //   params.push(options.where.status);
-      // }
       
       // Add id filter if present
       if (options.where.id) {
@@ -124,13 +112,7 @@ const Bid = {
   update: async (data, condition) => {
     let updateFields = [];
     let params = [];
-    
-    // Build the SET part of the query dynamically based on the data
-    // if (data.status !== undefined) {
-    //   updateFields.push('status = ?');
-    //   params.push(data.status);
-    // }
-    
+
     if (data.amount !== undefined) {
       updateFields.push('amount = ?');
       params.push(data.amount);

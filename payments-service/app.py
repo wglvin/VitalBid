@@ -1,11 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import stripe
-import json
+
 import os
 import sys
-from dotenv import load_dotenv
-from pathlib import Path
+
 import logging
 import datetime
 
@@ -14,9 +13,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Import the Kafka functions
 from kafka_lib.kafkaProducer import publish_successful_bid, publish_bid_update
 
-# Load environment variables
-env_path = Path(__file__).resolve().parents[1] / '.env'
-load_dotenv(dotenv_path=env_path)
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,8 +20,14 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app) 
 
-# Configure Stripe
-stripe.api_key = os.getenv('STRIPE_API_KEY')
+# Configure Stripe with error handling
+stripe_api_key = os.getenv('STRIPE_API_KEY')
+if not stripe_api_key:
+    logger.error("STRIPE_API_KEY environment variable is not set!")
+    raise ValueError("STRIPE_API_KEY environment variable is required")
+
+logger.info("Stripe API key configured successfully")
+stripe.api_key = stripe_api_key
 
 # In-memory storage for payment intents and bids (would be a database in production)
 payment_intents = {}
@@ -192,7 +194,7 @@ def check_payment_status(payment_intent_id):
 
 @app.route('/v1/bids/<bid_id>/update', methods=['POST'])
 def update_bid_status(bid_id):
-    """Update a bid's status and publish the event to Kafka"""
+    """Update a bid's payment status and publish the event to Kafka"""
     try:
         data = request.json
         new_status = data.get('status')

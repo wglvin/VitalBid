@@ -115,9 +115,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentUserId = getCurrentUserId();
         
         // Debug logging
-        console.log("Listing data:", listing);
-        console.log("Current user ID:", currentUserId);
-        console.log("Listing owner_id:", listing.owner_id);
         console.log("Is listing expired?", isExpired);
         
         // Check if the listing has an owner_id property and if it matches the current user ID
