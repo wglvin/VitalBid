@@ -154,7 +154,7 @@
       </div>
       <div>
         <h1 class="confirmation-title">Payment Successful</h1>
-        <p class="confirmation-subtitle">Your order has been confirmed</p>
+        <p class="confirmation-subtitle">Your bid has been successfully placed after payment.</p>
       </div>
     </div>
 
@@ -204,6 +204,7 @@
   </div>
 
   <script>
+
     /**
      * Parse query parameters from URL
      * @returns {Object} Object containing payment_intent and other params
@@ -342,6 +343,59 @@
           window.print();
         });
       }
+      // Place the bid after confirming payment
+      async function placeBidAfterPayment() {
+        console.log("placeBidAfterPayment() was called");
+        try {
+          const { listingId, amount } = getQueryParams();
+          const userData = JSON.parse(localStorage.getItem("userData") || '{}');
+          const bidderId = userData.userid;
+
+          if (!listingId || !amount || !bidderId) {
+            console.error("Missing required data for placing bid.");
+            return;
+          }
+
+          const response = await fetch(`http://localhost:8000/bidding/api/bids`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-User-Email': userData.email,
+              'X-User-Name': userData.username,
+              'X-User-ID': bidderId
+            },
+            body: JSON.stringify({
+              listingId: parseInt(listingId),
+              bidderId: parseInt(bidderId),
+              amount: parseFloat(amount)
+            })
+            
+          });
+
+          const data = await response.json();
+          console.log("✅ Bid response from backend:", data);
+
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Bid error response:", errorData);
+            throw new Error(errorData.message || "Failed to place bid after payment");
+          }
+
+          
+
+          // // Optional: redirect to updated listing page
+          // setTimeout(() => {
+          //   window.location.href = `listing-details.html?id=${listingId}`;
+          // }, 1000);
+
+        } catch (err) {
+          console.error("Error placing bid after payment:", err);
+        }
+    }
+
+    placeBidAfterPayment();
+
     });
   </script>
 </body>

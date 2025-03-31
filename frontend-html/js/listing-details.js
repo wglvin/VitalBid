@@ -58,6 +58,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('No listing found with ID:', numericId);
                 throw new Error('Listing not found');
             }
+            console.log("Listing found:", listing);
+            console.log("Listing bids:", listing.bids);
+
             
             // Render listing details
             renderListingDetails(listing);
@@ -321,20 +324,24 @@ document.addEventListener('DOMContentLoaded', function() {
             const bidderId = userData.userid;
             console.log("Using bidder ID:", bidderId);
             
-            const response = await apiService.placeBid(listingId, bidderId, bidAmount);
+            // const response = await apiService.placeBid(listingId, bidderId, bidAmount);
             
-            // Refresh the page to show the new bid
-            window.location.reload();
+            // // Refresh the page to show the new bid
+            // window.location.reload();
         } catch (error) {
             console.error('Error placing bid:', error);
+
+            const errorMsg = (typeof error === 'string')
+                ? error
+                : (error.message || JSON.stringify(error));
             
             // Check if the error contains a message about the listing being expired
-            if (error.message && error.message.toLowerCase().includes('expired')) {
+            if (errorMsg.toLowerCase().includes('expired')) {
                 showBidError('This listing has expired. Bidding is no longer available.');
                 // Refresh the page to update the UI
                 setTimeout(() => window.location.reload(), 2000);
             } else {
-                showBidError(error.message || 'Failed to place bid');
+                showBidError(errorMsg || 'Failed to place bid');
             }
         }
     });
