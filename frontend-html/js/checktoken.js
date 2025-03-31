@@ -1,4 +1,5 @@
 console.log("🔒 checktoken.js loaded!");
+
 function checkAuth() {
     const token = localStorage.getItem("authToken");
 
@@ -6,7 +7,8 @@ function checkAuth() {
     const isLoginOrSignup = path.includes("login.html") || path.includes("signup.html");
 
     if (!token && !isLoginOrSignup) {
-        window.location.href = "login.html";
+        // Append query parameter to show toast on login page
+        window.location.href = "login.html?reason=unauthorised";
     }
 }
 
@@ -14,5 +16,5 @@ checkAuth();
 
 function logout() {
     localStorage.removeItem("authToken");
-    window.location.href = "login.html";
+    window.location.href = "login.html?reason=logout";
 }

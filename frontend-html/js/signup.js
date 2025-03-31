@@ -28,8 +28,10 @@ async function signup() {
         console.log("🔍bidder login received:", result); 
 
         if (result.success) {
-            setTimeout(() => window.location.href = "../login.html", 2000); // delay redirect to see the toast
-
+            localStorage.setItem("signupSuccess", "true");
+            showToast("✅ Account created successfully!", "success"); 
+            setTimeout(() => window.location.href = "login.html", 2000); 
+            
         } else {
             showToast(result.result, "warning");
 

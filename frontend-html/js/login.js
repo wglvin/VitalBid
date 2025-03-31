@@ -1,3 +1,14 @@
+window.addEventListener("DOMContentLoaded", () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const reason = urlParams.get("reason");
+
+    if (reason === "unauthorised") {
+        showToast("❌ Unauthorised access. Please log in.", "warning");
+    } else if (reason === "logout") {
+        showToast("User has logged out successfully!", "success");
+    }
+});
+
 async function loginUser() {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
@@ -25,13 +36,13 @@ async function loginUser() {
             // Store both token and full response data
             localStorage.setItem("authToken", result.token);
             localStorage.setItem("userData", JSON.stringify(result));
-            
+
             showToast(result.message, "success");
             console.log("✅ Login successful - stored in localStorage:", {
                 token: result.token,
                 userData: result
             });
-            
+
             // Redirect to index.html after toast shows
             setTimeout(() => window.location.href = "index.html", 3500);
         } else {
