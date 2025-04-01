@@ -98,11 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Set status badge based on expiry
         const isActive = !isExpired;
-        // statusElement.textContent = isActive ? 'Active' : 'Ended';
-        // statusElement.classList.add(isActive ? 'status-active' : 'status-ended');
-
         statusElement.textContent = isActive ? 'Active' : 'Ended';
-
         statusElement.classList.remove('status-active', 'status-ended');
         statusElement.classList.add(isActive ? 'status-active' : 'status-ended');
 
@@ -153,13 +149,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // Pass the isActive flag to renderBidHistory to control accept button visibility
         renderBidHistory(listing.bids, isActive);
 
-        if (isExpired && listing.bids && listing.bids.length > 0) {
-            const winnerContainer = document.getElementById('winner-section-container');
-            if (winnerContainer) {
+        // Handle bid form visibility and winner display
+        const winnerContainer = document.getElementById('winner-section-container');
+
+        if (isExpired) {
+            // Hide the bid form if listing is expired
+            placeBidForm.classList.add('hidden');
+
+            // Show winner section if there are bids
+            if (listing.bids && listing.bids.length > 0) {
                 winnerContainer.innerHTML = ''; // Clear old content
-        
                 const topBid = [...listing.bids].sort((a, b) => b.bid_amt - a.bid_amt)[0];
-        
+                
                 const winnerSection = document.createElement('div');
                 winnerSection.className = 'bg-yellow-100 p-4 mt-4 rounded-lg text-center shadow';
                 winnerSection.innerHTML = `
@@ -167,18 +168,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p class="text-yellow-700 text-sm mt-1">Winning Bid: $${topBid.bid_amt.toLocaleString()}</p>
                     <p class="text-yellow-700 text-sm mt-1">Description: ${listing.description || 'No description provided'}</p>
                 `;
-        
                 winnerContainer.appendChild(winnerSection);
-            
-            }
             } else {
-            placeBidForm.classList.remove('hidden');
-        
-            const existingNotice = document.getElementById('expired-notice');
-            if (existingNotice) {
-                existingNotice.remove();
+                // Show a message if no bids were placed
+                winnerContainer.innerHTML = `
+                    <div class="bg-gray-100 p-4 mt-4 rounded-lg text-center shadow">
+                        <p class="text-gray-800">This listing has ended with no bids.</p>
+                    </div>
+                `;
             }
-        
+        } else {
+            // Show the bid form and hide winner section for active listings
+            placeBidForm.classList.remove('hidden');
+            winnerContainer.innerHTML = ''; // Clear any previous winner content
+            
+            // Set minimum bid amount
             const minimumBid = listing.current_bid ? listing.current_bid + 1 : listing.start_bid;
             bidAmountInput.min = minimumBid;
             bidAmountInput.placeholder = minimumBid.toLocaleString();
@@ -265,7 +269,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                         
                         await apiService.acceptBid(bid.bid_id, listingId);
-                        
                         // Show immediate visual feedback before reload
                         statusElement.textContent = 'Accepted';
                         statusElement.classList.add('bid-status-accepted');
