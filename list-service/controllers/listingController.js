@@ -83,8 +83,11 @@ exports.createListing = async (req, res) => {
     const finalEmail = email || req.headers['x-user-email'] || `owner${ownerId}@example.com`;
     const finalUsername = username || req.headers['x-user-name'] || `User ${ownerId}`;
     
-    // Publish Kafka event for listing creation with the proper user data
-    await produceMessage('ListingCreated', {
+    // Return the response immediately
+    res.status(201).json(listing);
+    
+    // Publish Kafka event asynchronously - don't await it
+    produceMessage('ListingCreated', {
       id: listing.id,
       title: listing.title,
       description: listing.description,
@@ -96,9 +99,11 @@ exports.createListing = async (req, res) => {
       organId: listing.organId,
       expiryDate: listing.expiryDate,
       createdAt: listing.createdAt
+    }).catch(error => {
+      console.error('Failed to send Kafka notification:', error.message);
+      // Error is logged but doesn't affect the API response
     });
     
-    return res.status(201).json(listing);
   } catch (error) {
     console.error('Error creating listing:', error);
     return res.status(500).json({ message: 'Failed to create listing', error: error.message });
