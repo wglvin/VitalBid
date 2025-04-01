@@ -219,6 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create bid history items
         sortedBids.forEach(bid => {
+            console.log('Bid object:', bid);
             const template = document.getElementById('bid-item-template');
             const clone = document.importNode(template.content, true);
             
@@ -252,10 +253,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     'bg-green-500', 'text-white', 'rounded', 'hover:bg-green-600');
                 
                 acceptButton.addEventListener('click', async (event) => {
-                    event.preventDefault(); // Prevent default action
+                    event.preventDefault();
                     try {
-                        console.log("Accepting bid:", bid.bid_id);
-                        await acceptBid(bid.bid_id);
+                        // Get listingId from URL parameter instead of bid object
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const listingId = urlParams.get('id');
+                        
+                        console.log("Accepting bid with data:", {
+                            bidId: bid.bid_id,
+                            listingId: listingId
+                        });
+                        
+                        await apiService.acceptBid(bid.bid_id, listingId);
                         
                         // Show immediate visual feedback before reload
                         statusElement.textContent = 'Accepted';
@@ -287,19 +296,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             bidsList.appendChild(clone);
         });
-    }
-    
-    // Function to accept a bid - update to include detailed error handling
-    async function acceptBid(bidId) {
-        try {
-            console.log(`Making API call to accept bid ID: ${bidId}`);
-            const response = await apiService.acceptBid(bidId);
-            console.log('API response from acceptBid:', response);
-            return response;
-        } catch (error) {
-            console.error('Error accepting bid:', error);
-            throw error;
-        }
     }
     
     // Get current user data from localStorage

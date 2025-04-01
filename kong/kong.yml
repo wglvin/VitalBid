@@ -67,6 +67,35 @@ services:
         paths:
           - /get_listing_bids
 
+  - name: resolve-service
+    url: http://resolve-service:3004
+    routes:
+      - name: resolve-route
+        paths:
+          - /resolve
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Content-Type
+            - Authorization
+            - Content-Length
+            - X-User-Email
+            - X-User-Name
+            - X-User-ID
+          credentials: true
+          max_age: 3600
+          preflight_continue: false
+
   - name: payments-service
     url: http://payments-service:5002
     routes:

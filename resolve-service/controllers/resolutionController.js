@@ -161,6 +161,7 @@ exports.acceptBid = async (req, res) => {
 
     // Save resolution record
     const resolution = await Resolution.create(resolutionData);
+    
     // Send notification if email headers are present
     const email = req.headers['x-user-email'];
     const username = req.headers['x-user-name'];

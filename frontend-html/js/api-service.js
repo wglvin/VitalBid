@@ -225,26 +225,52 @@ const apiService = {
     return await response.json();
   },
 
-  acceptBid: async function(bidId) {
+  acceptBid: async function(bidId, listingId) {
     try {
+      // Validate inputs
+      if (!bidId || !listingId) {
+        console.error('Missing required parameters:', { bidId, listingId });
+        throw new Error('bidId and listingId are required');
+      }
+
+      console.log('Accepting bid with data:', { bidId, listingId });
+
       const options = this.addUserMetadata({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          bidId: parseInt(bidId),      // Ensure it's a number
+          listingId: parseInt(listingId) // Ensure it's a number
+        })
       });
-      
-      const response = await fetch(`${API_BASE_URL}/bidding/api/bids/${bidId}/accept`, options);
-      
+
+      console.log('Request options:', {
+        url: `${API_BASE_URL}/resolve/api/resolutions/accept-bid`,
+        body: options.body
+      });
+
+      const response = await fetch(`${API_BASE_URL}/resolve/api/resolutions/accept-bid`, options);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to accept bid');
+        const errorText = await response.text();
+        console.error('Error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(errorText || 'Failed to accept bid');
       }
-      
+
       return await response.json();
     } catch (error) {
-      console.error('Error in acceptBid:', error);
+      console.error('Error in acceptBid:', {
+        message: error.message,
+        stack: error.stack,
+        details: error
+      });
       throw error;
     }
   }
-};
+}

@@ -4,7 +4,7 @@ use resolving_db;
 CREATE TABLE IF NOT EXISTS resolving (
     id INT AUTO_INCREMENT PRIMARY KEY,
     listing_id INT NOT NULL,
-    status ENUM('active', 'accepted', 'cancelled') DEFAULT 'active',
+    status ENUM('early', 'accepted', 'cancelled') DEFAULT 'accepted',
     winning_bid DECIMAL(10, 2) NOT NULL,
     winner_id INT NOT NULL,
     resolvedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
