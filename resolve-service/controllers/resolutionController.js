@@ -125,4 +125,69 @@ exports.resolveExpiredListings = async (req, res) => {
     console.error('Error resolving expired listings:', error);
     return res.status(500).json({ message: 'Failed to resolve expired listings', error: error.message });
   }
+};
+
+// Accept a bid and create resolution
+exports.acceptBid = async (req, res) => {
+  try {
+    const { bidId, listingId } = req.body;
+    
+    if (!bidId || !listingId) {
+      return res.status(400).json({ message: 'Missing required fields: bidId and listingId' });
+    }
+
+    // Check if listing is already resolved
+    const existingResolution = await Resolution.findByListingId(listingId);
+    if (existingResolution) {
+      return res.status(400).json({ message: `Listing ${listingId} is already resolved` });
+    }
+
+    // Get bid details from bid service
+    const biddingServiceUrl = process.env.BIDDING_SERVICE_URL;
+    const bidResponse = await axios.get(`${biddingServiceUrl}/api/bids/${bidId}`);
+    const bid = bidResponse.data;
+
+    if (!bid) {
+      return res.status(404).json({ message: 'Bid not found' });
+    }
+
+    // Create resolution record
+    const resolutionData = {
+      listing_id: listingId,
+      status: 'early',
+      winning_bid: parseFloat(bid.amount),
+      winner_id: bid.bidderId
+    };
+
+    // Save resolution record
+    const resolution = await Resolution.create(resolutionData);
+    // Send notification if email headers are present
+    const email = req.headers['x-user-email'];
+    const username = req.headers['x-user-name'];
+    
+    if (email) {
+      try {
+        // why is this port 3000?
+        await axios.post(`http://notification:3000/notify/email`, {
+          email: email,
+          subject: 'Bid Accepted',
+          text: `Hello ${username || 'there'},\n\nYour bid of $${bid.amount} has been accepted.\n\nThank you for using our service!`
+        });
+      } catch (notifyError) {
+        console.error('Failed to send notification:', notifyError.message);
+        // Continue - don't fail the operation just because notification failed
+      }
+    }
+
+    return res.status(200).json({
+      message: 'Bid accepted and resolution created successfully',
+      resolution: resolution
+    });
+  } catch (error) {
+    console.error('Error accepting bid:', error);
+    return res.status(500).json({ 
+      message: 'Failed to accept bid and create resolution', 
+      error: error.message 
+    });
+  }
 }; 

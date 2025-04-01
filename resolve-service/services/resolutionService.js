@@ -6,18 +6,16 @@ class ResolutionService {
   async resolveExpiredListings() {
     try {
       // Get all active listings from the listing service
-      const listingServiceUrl = process.env.LISTING_SERVICE_URL || 'http://list-service:3001';
-      console.log(`Attempting to connect to listing service at: ${listingServiceUrl}`);
+      const listingServiceUrl = process.env.LISTING_SERVICE_URL;
       
       try {
         const response = await axios.get(`${listingServiceUrl}/api/listings`);
-        console.log(`Successfully connected to listing service. Found ${response.data.length} listings`);
         const allListings = response.data;
         
         // Filter expired listings
         const now = new Date();
         const expiredListings = allListings.filter(listing => 
-          listing.status === 'active' && new Date(listing.expiryDate) < now
+          new Date(listing.expiryDate) < now
         );
         
         console.log(`Found ${expiredListings.length} expired listings to resolve`);
@@ -31,59 +29,72 @@ class ResolutionService {
             // Check if listing is already resolved
             const existingResolution = await Resolution.findByListingId(listing.id);
             if (existingResolution) {
-              console.log(`Listing ${listing.id} is already resolved, skipping`);
               continue;
             }
             
-            // Get the highest bid from the bidding service
-            const biddingServiceUrl = process.env.BIDDING_SERVICE_URL || 'http://bid-service:3002';
-            const bidsResponse = await axios.get(`${biddingServiceUrl}/api/bids/highest/${listing.id}`);
+            // Get the highest bid from the bidding service and resolve them as winner
+            const biddingServiceUrl = process.env.BIDDING_SERVICE_URL;
             
-            const resolutionData = {};
-            
-            if (bidsResponse.data && bidsResponse.data.highestBid) {
-              // There is a winning bid
-              const highestBid = bidsResponse.data.highestBid;
+            try {
+              const bidsResponse = await axios.get(`${biddingServiceUrl}/api/bids/highest/${listing.id}`);
               
-              // Accept the winning bid
-              await axios.post(`${biddingServiceUrl}/api/bids/${highestBid.id}/accept`);
+              if (bidsResponse.data && bidsResponse.data.highestBid) {
+                // There is a winning bid
+                const highestBid = bidsResponse.data.highestBid;
+                
+                try {
+                  // Instead of calling bid service directly, use our own acceptBid logic
+                  const resolutionData = {
+                    listing_id: listing.id,
+                    status: 'accepted',
+                    winning_bid: parseFloat(highestBid.amount),
+                    winner_id: highestBid.bidderId
+                  };
+
+                  // Save resolution record
+                  const resolution = await Resolution.create(resolutionData);
+                  
+                  console.log(`Listing ${listing.id} resolved with winning bid id ${highestBid.id}`);
+                  resolved.push(resolution);
+
+                } catch (acceptError) {
+                  console.error(`Error accepting bid for listing ${listing.id}:`, acceptError.response?.data || acceptError.message);
+                  throw acceptError;
+                }
+              } else {
+                // No bids found, mark as cancelled
+                const resolutionData = {
+                  listing_id: listing.id,
+                  status: 'cancelled',
+                  winning_bid: 0,
+                  winner_id: 0
+                };
+                
+                // Save resolution record
+                const resolution = await Resolution.create(resolutionData);
+                console.log(`Listing ${listing.id} had no bids`);
+                resolved.push(resolution);
+              }
               
-              // Create resolution record
-              resolutionData.listing_id = listing.id;
-              resolutionData.status = 'accepted';
-              resolutionData.winning_bid = parseFloat(highestBid.amount);
-              resolutionData.winner_id = highestBid.bidderId;
-              
-              // Update listing status to completed
-              await axios.put(`${listingServiceUrl}/api/listings/${listing.id}`, {
-                status: 'completed'
+            } catch (bidsError) {
+              console.error(`Error fetching bids for listing ${listing.id}:`, {
+                error: bidsError.message,
+                response: bidsError.response?.data,
+                url: `${biddingServiceUrl}/api/bids/highest/${listing.id}`
               });
-              
-              console.log(`Listing ${listing.id} resolved with winning bid ${highestBid.id}`);
-            } else {
-              // No bids found, mark as cancelled
-              resolutionData.listing_id = listing.id;
-              resolutionData.status = 'cancelled';
-              resolutionData.winning_bid = 0;
-              resolutionData.winner_id = 0;
-              
-              // Update listing status to cancelled
-              await axios.put(`${listingServiceUrl}/api/listings/${listing.id}`, {
-                status: 'cancelled'
-              });
-              
-              console.log(`Listing ${listing.id} cancelled due to no bids`);
+              throw bidsError;
             }
             
-            // Save resolution record
-            const resolution = await Resolution.create(resolutionData);
-            resolved.push(resolution);
-            
           } catch (error) {
-            console.error(`Error resolving listing ${listing.id}:`, error.message);
+            console.error(`Error resolving listing ${listing.id}:`, {
+              message: error.message,
+              response: error.response?.data,
+              stack: error.stack
+            });
             errors.push({
               listingId: listing.id,
-              error: error.message
+              error: error.message,
+              details: error.response?.data
             });
             // Continue processing other listings
           }
@@ -117,7 +128,7 @@ class ResolutionService {
   }
   
   // Schedule periodic resolution of expired listings
-  startResolutionScheduler(intervalSeconds = 10) {
+  startResolutionScheduler(intervalSeconds = 1) {
     // Run immediately once
     this.resolveExpiredListings().catch(err => 
       console.error('Error in initial resolution run:', err)

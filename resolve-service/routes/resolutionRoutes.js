@@ -18,4 +18,7 @@ router.post('/listing/:listingId/resolve', resolutionController.resolveListingMa
 // POST trigger resolution for all expired listings
 router.post('/resolve-expired', resolutionController.resolveExpiredListings);
 
+// POST accept a bid
+router.post('/accept-bid', resolutionController.acceptBid);
+
 module.exports = router; 

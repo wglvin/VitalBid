@@ -19,10 +19,10 @@ router.get('/highest/:listingId', bidController.getHighestBidForListing);
 router.post('/', bidController.createBid);
 
 // PUT accept a bid
-router.post('/:id/accept', bidController.acceptBid);
+// router.post('/:id/accept', bidController.acceptBid);
 
-// PUT cancel a bid
-router.put('/:id/cancel', bidController.cancelBid);
+// // PUT cancel a bid
+// router.put('/:id/cancel', bidController.cancelBid);
 
 // GET bid history for a listing (new route)
 router.get('/history/:listingId', bidController.getBidHistory);
