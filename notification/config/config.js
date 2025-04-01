@@ -1,15 +1,20 @@
 // Load environment variables from parent directory if running locally
 require('dotenv').config({ path: process.env.NODE_ENV ? null : '../../.env' });
 
+// Extract Kafka brokers from environment variables
+const kafkaBrokers = process.env.KAFKA_BROKERS || 'kafka:9092';
+
 module.exports = {
     notificationServiceUrl: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3003',
     kafka: {
         clientId: 'notification',
-        brokers: process.env.KAFKA_BROKERS ? process.env.KAFKA_BROKERS.split(',') : ['localhost:9092'],
+        // Ensure brokers is always an array with the correct format
+        brokers: typeof kafkaBrokers === 'string' ? kafkaBrokers.split(',') : ['kafka:9092'],
         groupId: 'notification-group',
         topics: {
             listings: 'listing-events',
-            notifications: 'notification-events'
+            notifications: 'notification-events',
+            bids: 'bid-events'
         }
     },
     mailgun: {

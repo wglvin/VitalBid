@@ -1,4 +1,4 @@
-const { Kafka } = require('kafkajs');
+const { Kafka, Partitioners } = require('kafkajs');
 const config = require('../config/config');
 
 const kafka = new Kafka({
@@ -6,7 +6,11 @@ const kafka = new Kafka({
     brokers: config.kafka.brokers
 });
 
-const producer = kafka.producer();
+// Fix the partitioner warning by setting the legacy partitioner
+const producer = kafka.producer({ 
+    createPartitioner: Partitioners.LegacyPartitioner 
+});
+
 let isProducerConnected = false;
 
 const connectProducer = async () => {

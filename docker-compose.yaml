@@ -170,10 +170,10 @@ services:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
     environment:
-      ZOOKEEPER_CLIENT_PORT: 22181
+      ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "22181:22181"
+      - "2181:2181"
     networks:
       - organ_network
 
@@ -183,18 +183,16 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      - "9092:9092" 
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:22181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Change this to make kafka:9092 the actual listener
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_CREATE_TOPICS: "listing-events:1:1,notification-events:1:1,successful-bids:1:1,bid-updates:1:1"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - organ_network
 
@@ -257,7 +255,7 @@ services:
       - "3003:3000"
     environment:
       - NODE_ENV=production
-      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_BROKERS=kafka:9092  # Keep this correct
       - MAILGUN_API_KEY=${MAILGUN_API_KEY}
       - MAILGUN_DOMAIN=${MAILGUN_DOMAIN}
       - EMAIL_FROM=${EMAIL_FROM}
