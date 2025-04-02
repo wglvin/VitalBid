@@ -61,7 +61,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Set listing data
             clone.querySelector('.listing-title').textContent = listing.name;
             clone.querySelector('.listing-id').textContent = `ID: ${listing.listing_id}`;
-            
+            clone.querySelector('.organ-id').textContent = `Organ: ${listing.organ_type || listing.organ?.type || 'N/A'}`;
+
+
             // Set listing image
             if (clone.querySelector('.listing-image')) {
                 clone.querySelector('.listing-image').src = listing.image || 'default-organ.jpg';
