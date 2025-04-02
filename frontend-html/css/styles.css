@@ -60,4 +60,67 @@ input[type="number"]:focus {
 
 .animate-spin {
     animation: spin 1s linear infinite;
+}
+
+/* Resolution status styles */
+.text-xxs {
+    font-size: 0.65rem;
+}
+
+/* Status badges */
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    display: inline-block;
+    font-weight: 600;
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+/* Active status */
+.status-active {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+/* Ended status */
+.status-ended {
+    background-color: #f3f4f6;
+    color: #1f2937;
+}
+
+/* Resolution type indicators */
+.status-ended-early {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-ended-accepted {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.status-ended-cancelled {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+/* Bid status badges */
+.bid-status {
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+    line-height: 1;
+    display: inline-block;
+}
+
+.bid-status-accepted {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.bid-status-rejected, 
+.bid-status-cancelled {
+    background-color: #fee2e2;
+    color: #b91c1c;
 } 

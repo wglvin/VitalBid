@@ -20,26 +20,81 @@ document.addEventListener('DOMContentLoaded', function() {
             loadingIndicator.classList.add('hidden');
             listingsContainer.classList.remove('hidden');
             
-            // Add computed status based on expiry date
-            data.forEach(listing => {
-                const isExpired = new Date(listing.time_end) <= new Date();
-                listing.status = isExpired ? 'ended' : 'active';
-            });
+            // Check for resolved listings first
+            await checkResolutionsBeforeFilter(data);
             
-            // Render all listings
-            renderListings(data, tabContentAll);
+            // Filter and render listings for each tab
             
-            // Filter and render active listings
+            // Active tab: Only listings with 'active' status
             const activeListings = data.filter(listing => listing.status === 'active');
             renderListings(activeListings, tabContentActive);
             
-            // Filter and render ended listings
-            const endedListings = data.filter(listing => listing.status === 'ended');
+            // Ended tab: Any with 'ended' status, any with resolution, or any expired
+            const endedListings = data.filter(listing => 
+                listing.status === 'ended' || 
+                listing.is_resolved || 
+                new Date(listing.time_end) <= new Date()
+            );
             renderListings(endedListings, tabContentEnded);
+            
+            // All tab: All listings
+            renderListings(data, tabContentAll);
+            
+            // Update the tab counts
+            document.getElementById('active-count').textContent = activeListings.length;
+            document.getElementById('ended-count').textContent = endedListings.length;
+            document.getElementById('all-count').textContent = data.length;
         } catch (error) {
             console.error('Failed to fetch listings:', error);
             loadingIndicator.innerHTML = `<p class="text-red-500">Error loading listings: ${error.message}</p>`;
         }
+    }
+
+    // Check for resolutions before filtering listings
+    async function checkResolutionsBeforeFilter(listings) {
+        const resolutionPromises = [];
+        
+        for (const listing of listings) {
+            const checkPromise = async () => {
+                try {
+                    const resolutionServiceUrl = 'http://localhost:8000/resolve';
+                    const res = await fetch(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id}`);
+                    if (res.ok) {
+                        const resolution = await res.json();
+                        // Mark the listing as resolved
+                        listing.is_resolved = true;
+                        listing.resolution_status = resolution.status; // early, accepted, cancelled
+                        listing.status = 'ended'; // Force status to ended for any resolved listing
+                        
+                        // Also store winner info
+                        if (resolution.winner_id) {
+                            listing.winner_id = resolution.winner_id;
+                            listing.winning_bid = resolution.winning_bid;
+                        }
+                        
+                        console.log(`Listing ${listing.listing_id} has resolution status: ${resolution.status}`);
+                    } else {
+                        // If no resolution is found, compute status based on time
+                        const isExpired = new Date(listing.time_end) <= new Date();
+                        listing.status = isExpired ? 'ended' : 'active';
+                    }
+                } catch (error) {
+                    // If error fetching resolution, compute status based on time
+                    const isExpired = new Date(listing.time_end) <= new Date();
+                    listing.status = isExpired ? 'ended' : 'active';
+                }
+            };
+            
+            // Add the promise to our array
+            resolutionPromises.push(checkPromise());
+        }
+        
+        // Wait for all resolution checks to complete
+        await Promise.all(resolutionPromises);
+        
+        // Log the statuses for debugging
+        console.log("Listing statuses after resolution check:", 
+            listings.map(l => ({id: l.listing_id, status: l.status, resolution: l.resolution_status})));
     }
 
     // Render listings to a container element
@@ -53,79 +108,137 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Clone the template for each listing and append to container
-        listings.forEach(listing => {
-            const template = document.getElementById('listing-card-template');
-            const clone = document.importNode(template.content, true);
-            
-            // Set listing data
-            clone.querySelector('.listing-title').textContent = listing.name;
-            clone.querySelector('.listing-id').textContent = `ID: ${listing.listing_id}`;
-            
-            // Set listing image
-            if (clone.querySelector('.listing-image')) {
-                const imageElement = clone.querySelector('.listing-image');
+        // Get resolutions for all listings to check their status
+        const checkResolutions = async () => {
+            for (const listing of listings) {
+                if (listing.status === 'ended') {
+                    try {
+                        const resolutionServiceUrl = 'http://localhost:8000/resolve';
+                        const res = await fetch(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id}`);
+                        if (res.ok) {
+                            const resolution = await res.json();
+                            listing.resolution_status = resolution.status; // early, accepted, cancelled
+                        }
+                    } catch (error) {
+                        console.warn(`Could not fetch resolution for listing ${listing.listing_id}:`, error);
+                    }
+                }
+            }
+            renderListingsWithStatus(listings);
+        };
+        
+        // Render listings with resolution status
+        function renderListingsWithStatus(listings) {
+            // Clone the template for each listing and append to container
+            listings.forEach(listing => {
+                const template = document.getElementById('listing-card-template');
+                const clone = document.importNode(template.content, true);
                 
-                // Handle image loading
-                if (listing.image && listing.image !== 'default-organ.jpg') {
-                    // Use a function to load the image asynchronously
-                    loadListingImage(listing.image)
+                // Set listing data
+                clone.querySelector('.listing-title').textContent = listing.name;
+                clone.querySelector('.listing-id').textContent = `ID: ${listing.listing_id}`;
+                clone.querySelector('.organ-id').textContent = `Organ: ${listing.organ_type || listing.organ?.type || 'N/A'}`;
+
+                // Set listing image
+                if (clone.querySelector('.listing-image')) {
+                    // Try to load the image through the apiService
+                    const imageElement = clone.querySelector('.listing-image');
+                    loadListingImage(listing.image || 'default-organ.jpg')
                         .then(imageUrl => {
                             imageElement.src = imageUrl;
                         })
-                        .catch(error => {
-                            console.error('Failed to load image:', error);
+                        .catch(() => {
+                            // Fallback to default image
                             imageElement.src = 'images/default-organ.jpg';
                         });
-                } else {
-                    imageElement.src = 'images/default-organ.jpg';
                 }
                 
-                imageElement.alt = listing.name;
-            }
-            
-            // Set status badge (based on computed status)
-            const statusBadge = clone.querySelector('.listing-status');
-            if (statusBadge) {
-                const isActive = listing.status === 'active';
-                statusBadge.textContent = isActive ? 'Active' : 'Ended';
-                statusBadge.classList.add(isActive ? 'status-active' : 'status-ended');
-            }
-            
-            // Set pricing data
-            clone.querySelector('.listing-start-bid').textContent = `$${listing.start_bid.toLocaleString()}`;
-            
-            // Set current bid
-            const currentBidElement = clone.querySelector('.listing-current-bid');
-            if (listing.current_bid) {
-                currentBidElement.textContent = `$${listing.current_bid.toLocaleString()}`;
-            } else {
-                currentBidElement.textContent = 'No bids yet';
-            }
-            
-            // Set bids count
-            clone.querySelector('.listing-bids-count').textContent = listing.bids_count;
-            
-            // Set time remaining
-            const timeRemainingContainer = clone.querySelector('.time-remaining-container');
-            const timeRemainingElement = clone.querySelector('.listing-time-remaining');
-            
-            // Check if listing is expired based on time_end
-            const isActive = new Date(listing.time_end) > new Date();
-            if (isActive) {
-                timeRemainingElement.textContent = getTimeRemaining(listing.time_end);
-            } else {
-                timeRemainingContainer.classList.add('hidden');
-            }
-            
-            // Set up view details button
-            const viewDetailsBtn = clone.querySelector('.view-details-btn');
-            viewDetailsBtn.addEventListener('click', () => {
-                window.location.href = `listing-details.html?id=${listing.listing_id}`;
+                // Set status badge (based on computed status and resolution status)
+                const statusBadge = clone.querySelector('.listing-status');
+                if (statusBadge) {
+                    if (listing.status === 'ended') {
+                        // Always show "Ended" as the primary status for all ended listings
+                        statusBadge.textContent = 'Ended';
+                        statusBadge.classList.add('bg-gray-300', 'text-gray-700', 'px-2', 'py-1', 'rounded', 'text-xs', 'font-semibold');
+                        
+                        // If we have resolution status, add a small badge with the specific type
+                        if (listing.resolution_status) {
+                            // Create sub-status badge
+                            const subStatusBadge = document.createElement('span');
+                            let subStatusText = '';
+                            let subStatusClass = '';
+                            
+                            switch(listing.resolution_status) {
+                                case 'early':
+                                    subStatusText = '(Early)';
+                                    subStatusClass = 'bg-yellow-100 text-yellow-800';
+                                    break;
+                                case 'accepted':
+                                    subStatusText = '(Accepted)';
+                                    subStatusClass = 'bg-green-100 text-green-800';
+                                    break;
+                                case 'cancelled':
+                                    subStatusText = '(Cancelled)';
+                                    subStatusClass = 'bg-red-100 text-red-800';
+                                    break;
+                            }
+                            
+                            if (subStatusText) {
+                                subStatusBadge.textContent = subStatusText;
+                                subStatusBadge.classList.add('ml-1', 'px-1', 'py-0.5', 'rounded', 'text-xxs', 'font-medium');
+                                subStatusClass.split(' ').forEach(cls => subStatusBadge.classList.add(cls));
+                                
+                                // Append sub-status after the main status badge
+                                const badgeContainer = statusBadge.parentNode;
+                                badgeContainer.appendChild(subStatusBadge);
+                            }
+                        }
+                    } else if (listing.status === 'active') {
+                        statusBadge.textContent = 'Active';
+                        statusBadge.classList.add('bg-green-100', 'text-green-800', 'px-2', 'py-1', 'rounded', 'text-xs', 'font-semibold');
+                    } else {
+                        statusBadge.textContent = listing.status;
+                    }
+                }
+                
+                // Set pricing data
+                clone.querySelector('.listing-start-bid').textContent = `$${listing.start_bid.toLocaleString()}`;
+                
+                // Set current bid
+                const currentBidElement = clone.querySelector('.listing-current-bid');
+                if (listing.current_bid) {
+                    currentBidElement.textContent = `$${listing.current_bid.toLocaleString()}`;
+                } else {
+                    currentBidElement.textContent = 'No bids yet';
+                }
+                
+                // Set bids count
+                clone.querySelector('.listing-bids-count').textContent = listing.bids_count;
+                
+                // Set time remaining
+                const timeRemainingContainer = clone.querySelector('.time-remaining-container');
+                const timeRemainingElement = clone.querySelector('.listing-time-remaining');
+                
+                // Check if listing is expired based on time_end
+                const isActive = new Date(listing.time_end) > new Date() && listing.status !== 'ended';
+                if (isActive) {
+                    timeRemainingElement.textContent = getTimeRemaining(listing.time_end);
+                } else {
+                    timeRemainingContainer.classList.add('hidden');
+                }
+                
+                // Set up view details button
+                const viewDetailsBtn = clone.querySelector('.view-details-btn');
+                viewDetailsBtn.addEventListener('click', () => {
+                    window.location.href = `listing-details.html?id=${listing.listing_id}`;
+                });
+                
+                container.appendChild(clone);
             });
-            
-            container.appendChild(clone);
-        });
+        }
+        
+        // Call the async function to check resolutions and render listings
+        checkResolutions();
     }
 
     // Function to load listing image using apiService
