@@ -27,4 +27,6 @@ router.post('/', bidController.createBid);
 // GET bid history for a listing (new route)
 router.get('/history/:listingId', bidController.getBidHistory);
 
+router.post('/api/bids/reject-others', bidController.rejectOtherBids);
+
 module.exports = router; 

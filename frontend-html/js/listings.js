@@ -73,9 +73,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Set status badge (based on computed status)
             const statusBadge = clone.querySelector('.listing-status');
             if (statusBadge) {
-                const isActive = listing.status === 'active';
-                statusBadge.textContent = isActive ? 'Active' : 'Ended';
-                statusBadge.classList.add(isActive ? 'status-active' : 'status-ended');
+                if (listing.status === 'ended') {
+                    statusBadge.textContent = 'Ended';
+                    statusBadge.classList.add('bg-gray-300', 'text-gray-700', 'px-2', 'py-1', 'rounded', 'text-xs', 'font-semibold');
+                } else if (listing.status === 'active') {
+                    statusBadge.textContent = 'Active';
+                    statusBadge.classList.add('bg-green-100', 'text-green-800', 'px-2', 'py-1', 'rounded', 'text-xs', 'font-semibold');
+                } else {
+                    statusBadge.textContent = listing.status;
+                }
             }
             
             // Set pricing data

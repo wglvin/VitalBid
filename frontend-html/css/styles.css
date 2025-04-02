@@ -34,6 +34,23 @@
     color: white;
 }
 
+.bid-status-accepted {
+    background-color: #dcfce7;
+    color: #15803d;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-weight: bold;
+  }
+  
+  .bid-status-rejected {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-weight: bold;
+  }
+  
+
 /* Input styling */
 input[type="number"] {
     padding: 0.5rem;

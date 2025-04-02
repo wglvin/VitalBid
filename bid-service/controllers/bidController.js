@@ -187,3 +187,33 @@ exports.getBidHistory = async (req, res) => {
     });
   }
 };
+
+// Reject all bids except the winning one
+exports.rejectOtherBids = async (req, res) => {
+  const { listing_id, winning_bid_id } = req.body;
+
+  if (!listing_id || !winning_bid_id) {
+    return res.status(400).json({ message: 'Missing listing_id or winning_bid_id' });
+  }
+
+  try {
+    // Accept the winning bid
+    await executeQuery(
+      'UPDATE bids SET status = "accepted" WHERE id = ?',
+      [winning_bid_id]
+    );
+
+    // Cancel all other bids for the same listing
+    await executeQuery(
+      'UPDATE bids SET status = "cancelled" WHERE listingId = ? AND id != ?',
+      [listing_id, winning_bid_id]
+    );
+
+    return res.json({ message: 'Bid accepted and others rejected successfully' });
+  } catch (error) {
+    console.error('Failed to update bids:', error);
+    return res.status(500).json({ message: 'Failed to update bids', error: error.message });
+  }
+};
+
+
