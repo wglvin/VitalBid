@@ -281,51 +281,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 acceptButton.textContent = 'Accept Bid';
                 acceptButton.classList.add('accept-bid-btn', 'ml-2', 'px-2', 'py-1', 'text-xs', 
                     'bg-green-500', 'text-white', 'rounded', 'hover:bg-green-600');
-                
-                acceptButton.addEventListener('click', async (event) => {
-                    event.preventDefault();
-                    try {
-                        // Get listingId from URL parameter instead of bid object
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const listingId = urlParams.get('id');
-                        
-                        console.log("Accepting bid with data:", {
-                            bidId: bid.bid_id,
-                            listingId: listingId
-                        });
-                        
-                        await apiService.acceptBid(bid.bid_id, listingId);
-                        // Show immediate visual feedback before reload
-                        statusElement.textContent = 'Accepted';
-                        statusElement.classList.add('bid-status-accepted');
-                        statusElement.classList.remove('hidden');
-                        
-                        // Remove the accept button
-                        acceptButton.remove();
-                        
-                        // Short delay before refresh to show the status change
-                        // Show confirmation message
-                        showToast("✅ Bid accepted successfully! Redirecting...");
-
-                        // Redirect to homepage after delay
-                        setTimeout(() => {
-                        window.location.href = 'index.html';
-                        }, 1000);
-                        
-                    } catch (error) {
-                        console.error('Error accepting bid:', error);
-                        showError('Failed to accept bid: ' + error.message);
-                    }
-                });
-                
-                // Find the container to append the button
+            
+                    acceptButton.addEventListener('click', async (event) => {
+                        event.preventDefault();
+                        try {
+                          const urlParams = new URLSearchParams(window.location.search);
+                          const listingId = urlParams.get('id');
+                      
+                          // Call API to accept the bid
+                          await apiService.acceptBid(bid.bid_id, listingId);
+                      
+                          // 🔄 Update status in UI
+                          statusElement.textContent = 'Accepted';
+                          statusElement.classList.remove('hidden');
+                          statusElement.classList.add('bid-status-accepted');
+                      
+                          // 🚫 Remove the accept button
+                          acceptButton.remove();
+                      
+                          // ✅ Disable all other accept buttons (optional)
+                          document.querySelectorAll('.accept-bid-btn').forEach(btn => btn.remove());
+                      
+                          // 🎯 Show winner section
+                          const winnerContainer = document.getElementById('winner-section-container');
+                          winnerContainer.innerHTML = `
+                            <div class="bg-green-100 p-4 rounded-md mt-6">
+                              <h3 class="text-sm font-medium text-green-800">🏆 Winner Selected</h3>
+                              <p class="text-sm text-green-700">
+                                Bidder ID: <strong>${bid.bidder_id}</strong> | Winning Bid: $${bid.bid_amt}
+                              </p>
+                            </div>
+                          `;
+                      
+                          showToast("✅ Bid accepted successfully!");
+                          
+                        } catch (error) {
+                          console.error('Error accepting bid:', error);
+                          showError('Failed to accept bid: ' + error.message);
+                        }
+                      });
+                      
+            
+                // Append to controls
                 const controlsContainer = clone.querySelector('.bid-controls-container .flex');
                 if (controlsContainer) {
                     controlsContainer.appendChild(acceptButton);
                 } else {
                     statusElement.parentNode.appendChild(acceptButton);
                 }
-            }
+            }            
             
             bidsList.appendChild(clone);
         });
