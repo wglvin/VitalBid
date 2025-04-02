@@ -57,15 +57,54 @@ document.addEventListener('DOMContentLoaded', function() {
             imageElement.alt = listing.name;
         }
 
-        // Set status badge based on expiry
+        // Set status badge based on expiry and resolution status
         const currentTime = new Date();
         const expiryTime = new Date(listing.time_end);
-        const isActive = currentTime < expiryTime;
+        const isActive = currentTime < expiryTime && !listing.is_resolved;
 
         const statusElement = clone.querySelector('.listing-status');
-        statusElement.textContent = isActive ? 'Active' : 'Ended';
-        statusElement.classList.remove('status-active', 'status-ended');
-        statusElement.classList.add(isActive ? 'status-active' : 'status-ended');
+        
+        if (isActive) {
+            // For active listings
+            statusElement.textContent = 'Active';
+            statusElement.classList.add('status-active', 'bg-green-100', 'text-green-800');
+        } else {
+            // For ended listings
+            if (listing.resolution_status) {
+                // If we have resolution status, show it
+                let statusText = 'Ended';
+                let statusClass = 'bg-gray-300 text-gray-700';
+                
+                // Add a separate resolution badge if needed
+                const statusContainer = statusElement.parentNode;
+                const resolutionBadge = document.createElement('span');
+                resolutionBadge.classList.add('ml-1', 'px-1', 'py-0.5', 'rounded', 'text-xxs', 'font-medium');
+                
+                // Set styles based on resolution type
+                switch(listing.resolution_status) {
+                    case 'early':
+                        resolutionBadge.textContent = '(Early)';
+                        resolutionBadge.classList.add('bg-yellow-100', 'text-yellow-800');
+                        break;
+                    case 'accepted':
+                        resolutionBadge.textContent = '(Accepted)';
+                        resolutionBadge.classList.add('bg-green-100', 'text-green-800');
+                        break;
+                    case 'cancelled':
+                        resolutionBadge.textContent = '(Cancelled)';
+                        resolutionBadge.classList.add('bg-red-100', 'text-red-800');
+                        break;
+                }
+                
+                statusElement.textContent = statusText;
+                statusElement.classList.add('bg-gray-300', 'text-gray-700');
+                statusContainer.appendChild(resolutionBadge);
+            } else {
+                // Standard ended listing
+                statusElement.textContent = 'Ended';
+                statusElement.classList.add('bg-gray-300', 'text-gray-700');
+            }
+        }
 
         // Set pricing and time data
         clone.querySelector('.listing-start-bid').textContent = `$${listing.start_bid.toLocaleString()}`;
@@ -109,7 +148,61 @@ document.addEventListener('DOMContentLoaded', function() {
         const row = document.createElement('tr');
         const currentTime = new Date();
         const expiryTime = new Date(listing.time_end);
-        const isActive = currentTime < expiryTime;
+        const isActive = currentTime < expiryTime && !listing.is_resolved;
+
+        // Prepare status display
+        let statusHTML = '';
+        if (isActive) {
+            statusHTML = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>`;
+        } else if (listing.resolution_status) {
+            // Main status badge
+            statusHTML = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-300 text-gray-700">Ended</span>`;
+            
+            // Resolution type badge
+            let resolutionClass = '';
+            let resolutionText = '';
+            
+            switch(listing.resolution_status) {
+                case 'early':
+                    resolutionClass = 'bg-yellow-100 text-yellow-800';
+                    resolutionText = '(Early)';
+                    break;
+                case 'accepted':
+                    resolutionClass = 'bg-green-100 text-green-800';
+                    resolutionText = '(Accepted)';
+                    break;
+                case 'cancelled':
+                    resolutionClass = 'bg-red-100 text-red-800';
+                    resolutionText = '(Cancelled)';
+                    break;
+            }
+            
+            // Add the resolution badge if we have a status
+            if (resolutionText) {
+                statusHTML += ` <span class="ml-1 px-1 py-0.5 inline-flex text-xxs leading-4 font-medium rounded ${resolutionClass}">${resolutionText}</span>`;
+            }
+        } else {
+            statusHTML = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-300 text-gray-700">Ended</span>`;
+        }
+
+        // Add bid status if available
+        let bidStatusHTML = '';
+        if (bid.status) {
+            let statusClass = '';
+            let statusText = '';
+            
+            if (bid.status === 'accepted') {
+                statusClass = 'bg-green-100 text-green-800';
+                statusText = 'Accepted';
+            } else if (bid.status === 'cancelled') {
+                statusClass = 'bg-red-100 text-red-800';
+                statusText = 'Rejected';
+            }
+            
+            if (statusText) {
+                bidStatusHTML = ` <span class="ml-1 px-1 py-0.5 inline-flex text-xxs leading-4 font-medium rounded ${statusClass}">${statusText}</span>`;
+            }
+        }
 
         row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap">
@@ -117,14 +210,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="text-sm text-gray-500">ID: ${listing.listing_id}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }">
-                    ${isActive ? 'Active' : 'Ended'}
-                </span>
+                ${statusHTML}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                $${bid.bid_amt.toLocaleString()}
+                $${bid.bid_amt.toLocaleString()}${bidStatusHTML}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${expiryTime.toLocaleString()}
@@ -149,6 +238,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Fetch all listings with bids
             const listings = await apiService.getListingsWithBids();
             console.log("All listings received:", listings);
+
+            // Check all listings for resolutions before filtering
+            await checkResolutionsForListings(listings);
 
             // Filter listings owned by the current user
             const userListings = listings.filter(listing => listing.owner_id === currentUserId);
@@ -227,6 +319,69 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error fetching user listings and bids:', error);
             showError(error.message || 'Failed to load your listings and bids');
         }
+    }
+
+    // Check all listings for resolution status
+    async function checkResolutionsForListings(listings) {
+        const resolutionPromises = [];
+        
+        for (const listing of listings) {
+            const checkPromise = async () => {
+                try {
+                    const resolutionServiceUrl = 'http://localhost:8000/resolve';
+                    const res = await fetch(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id}`);
+                    if (res.ok) {
+                        const resolution = await res.json();
+                        // Mark the listing as resolved
+                        listing.is_resolved = true;
+                        listing.resolution_status = resolution.status; // early, accepted, cancelled
+                        listing.status = 'ended'; // Force status to ended for any resolved listing
+                        
+                        // Also store winner info
+                        if (resolution.winner_id) {
+                            listing.winner_id = resolution.winner_id;
+                            listing.winning_bid = resolution.winning_bid;
+                        }
+                        
+                        // Mark bids with proper status
+                        if (listing.bids && listing.bids.length > 0) {
+                            // Find the winning bid
+                            const winningBidIdx = listing.bids.findIndex(bid => 
+                                bid.bidder_id === resolution.winner_id && 
+                                parseFloat(bid.bid_amt) === parseFloat(resolution.winning_bid)
+                            );
+                            
+                            if (winningBidIdx >= 0) {
+                                listing.bids[winningBidIdx].status = 'accepted';
+                                
+                                // Mark other bids as cancelled
+                                listing.bids.forEach((bid, idx) => {
+                                    if (idx !== winningBidIdx) {
+                                        bid.status = 'cancelled';
+                                    }
+                                });
+                            }
+                        }
+                        
+                        console.log(`Listing ${listing.listing_id} has resolution status: ${resolution.status}`);
+                    } else {
+                        // If no resolution is found, compute status based on time
+                        const isExpired = new Date(listing.time_end) <= new Date();
+                        listing.status = isExpired ? 'ended' : 'active';
+                    }
+                } catch (error) {
+                    // If error fetching resolution, compute status based on time
+                    const isExpired = new Date(listing.time_end) <= new Date();
+                    listing.status = isExpired ? 'ended' : 'active';
+                }
+            };
+            
+            // Add the promise to our array
+            resolutionPromises.push(checkPromise());
+        }
+        
+        // Wait for all resolution checks to complete
+        await Promise.all(resolutionPromises);
     }
 
     // Initialize the page

@@ -8,6 +8,49 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="icon" type="image/x-icon" href="images/favicon.ico">
     <script src="js/checktoken.js"></script>
+    <style>
+        /* Status badge styles */
+        .status-active {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-ended {
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        
+        .status-ended-early {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-ended-accepted {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-ended-cancelled {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        /* Bid status styles */
+        .bid-status-accepted {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .bid-status-rejected, .bid-status-cancelled {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        /* Smaller text size for resolution badges */
+        .text-xxs {
+            font-size: 0.65rem;
+        }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <header class="bg-white shadow">
