@@ -36,6 +36,27 @@ document.addEventListener('DOMContentLoaded', function() {
         clone.querySelector('.listing-title').textContent = listing.name;
         clone.querySelector('.listing-id').textContent = `ID: ${listing.listing_id}`;
 
+        // Set listing image
+        const imageElement = clone.querySelector('.listing-image');
+        if (imageElement) {
+            // Handle image loading
+            if (listing.image && listing.image !== 'default-organ.jpg') {
+                // Use a function to load the image asynchronously
+                loadListingImage(listing.image)
+                    .then(imageUrl => {
+                        imageElement.src = imageUrl;
+                    })
+                    .catch(error => {
+                        console.error('Failed to load image:', error);
+                        imageElement.src = 'images/default-organ.jpg';
+                    });
+            } else {
+                imageElement.src = 'images/default-organ.jpg';
+            }
+            
+            imageElement.alt = listing.name;
+        }
+
         // Set status badge based on expiry
         const currentTime = new Date();
         const expiryTime = new Date(listing.time_end);
@@ -65,6 +86,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         return clone;
+    }
+
+    // Function to load listing image using apiService
+    async function loadListingImage(imageName) {
+        try {
+            if (imageName === 'default-organ.jpg') {
+                return 'images/default-organ.jpg';
+            }
+            
+            // Use the apiService to get the image URL
+            const imageUrl = await apiService.getImage(imageName);
+            return imageUrl;
+        } catch (error) {
+            console.error('Error loading image:', error);
+            return 'images/default-organ.jpg';
+        }
     }
 
     // Create a bid row element

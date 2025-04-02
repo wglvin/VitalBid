@@ -3,6 +3,11 @@ const listingController = require('../controllers/listingController');
 
 const router = express.Router();
 
+// Image upload routes
+router.post('/upload', listingController.uploadImage, listingController.handleImageUpload);
+router.get('/images/:filename', listingController.getImage);
+router.delete('/images/:filename', listingController.deleteImage);
+
 // GET all listings
 router.get('/', listingController.getAllListings);
 

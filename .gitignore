@@ -71,3 +71,5 @@ build/
 # Notification service specific
 notification/.env
 notification/logs/
+
+list-service/uploads/

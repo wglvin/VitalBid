@@ -38,6 +38,70 @@ const apiService = {
     return options;
   },
 
+  // Image Service
+  async uploadImage(imageFile) {
+    try {
+      if (!imageFile) {
+        throw new Error('No image file provided');
+      }
+
+      // Create FormData for image upload
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      // Don't set Content-Type header - it will be automatically set with boundary for multipart/form-data
+      const options = this.addUserMetadata({
+        method: 'POST',
+        body: formData
+      });
+
+      console.log("Uploading image...");
+      const response = await fetch(`${API_BASE_URL}/listing/api/listings/upload`, options);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to upload image');
+      }
+
+      const result = await response.json();
+      console.log("Image upload successful:", result);
+      return result;
+    } catch (error) {
+      console.error("Error in uploadImage:", error);
+      throw error;
+    }
+  },
+
+  async getImage(filename) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/listing/api/listings/images/${filename}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch image');
+      }
+      return response.url;
+    } catch (error) {
+      console.error("Error in getImage:", error);
+      throw error;
+    }
+  },
+
+  async deleteImage(filename) {
+    try {
+      const options = this.addUserMetadata({
+        method: 'DELETE'
+      });
+
+      const response = await fetch(`${API_BASE_URL}/listing/api/listings/images/${filename}`, options);
+      if (!response.ok) {
+        throw new Error('Failed to delete image');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Error in deleteImage:", error);
+      throw error;
+    }
+  },
+
   // List Service
   async getAllListings() {
     const options = this.addUserMetadata();

@@ -2,6 +2,41 @@ document.addEventListener('DOMContentLoaded', function() {
     const createListingForm = document.getElementById('create-listing-form');
     const organSelect = document.getElementById('organ-id');
     const formError = document.getElementById('form-error');
+    const imageInput = document.getElementById('listing-image');
+    const imagePreview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-img');
+    
+    // Image preview functionality
+    imageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                showError('Image size must be less than 5MB');
+                imageInput.value = '';
+                imagePreview.classList.add('hidden');
+                return;
+            }
+
+            // Validate file type
+            if (!file.type.match('image.*')) {
+                showError('Please upload an image file (JPG, PNG, or GIF)');
+                imageInput.value = '';
+                imagePreview.classList.add('hidden');
+                return;
+            }
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                imagePreview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            imagePreview.classList.add('hidden');
+        }
+    });
     
     // Set minimum date for expiry date (1 minute from now)
     const expiryDateInput = document.getElementById('expiry-date');
@@ -100,50 +135,76 @@ document.addEventListener('DOMContentLoaded', function() {
             // Store the actual email in localStorage for debugging
             localStorage.setItem("lastUsedEmail", userData.email);
             console.log("Storing email in localStorage for debugging:", userData.email);
-            
 
-            
-            const listingData = {
-                name: document.getElementById('listing-name').value,
-                description: document.getElementById('listing-description').value,
-                organ_id: document.getElementById('organ-id').value,
-                start_bid: parseFloat(document.getElementById('starting-bid').value),
-                time_end: timeEndISO,
-                status: "active",
-                owner_id: userData.userid,
-            };
-            
-            console.log("Submitting listing data:", listingData);
-            
-            // Validate data
-            if (!listingData.name) {
-                showError('Please enter a listing title');
+            // Handle image upload first
+            const imageFile = imageInput.files[0];
+            if (!imageFile) {
+                showError('Please upload an image for the listing');
                 return;
             }
-            
-            if (!listingData.organ_id) {
-                showError('Please select an organ');
-                return;
-            }
-            
-            if (isNaN(listingData.start_bid) || listingData.start_bid <= 0) {
-                showError('Please enter a valid starting bid greater than 0');
-                return;
-            }
-            
-            // Submit listing
-            console.log("Calling apiService.addListing...");
-            
+
             try {
-                const response = await apiService.addListing(listingData);
-                console.log("API response:", response);
+                // Use apiService to upload the image
+                console.log("Uploading image via apiService...");
+                const uploadResult = await apiService.uploadImage(imageFile);
+                console.log("Image upload successful:", uploadResult);
+
+                // Now create the listing with the image filename
+                const listingData = {
+                    name: document.getElementById('listing-name').value,
+                    description: document.getElementById('listing-description').value,
+                    organ_id: document.getElementById('organ-id').value,
+                    start_bid: parseFloat(document.getElementById('starting-bid').value),
+                    time_end: timeEndISO,
+                    status: "active",
+                    owner_id: userData.userid,
+                    image: uploadResult.filename // Add the uploaded image filename
+                };
                 
-                // Redirect to the listing page using the correct ID property
-                // window.location.href = `listing-details.html?id=${response.id}`;
-                window.location.href = "index.html";
+                console.log("Submitting listing data:", listingData);
+                
+                // Validate data
+                if (!listingData.name) {
+                    showError('Please enter a listing title');
+                    return;
+                }
+                
+                if (!listingData.organ_id) {
+                    showError('Please select an organ');
+                    return;
+                }
+                
+                if (isNaN(listingData.start_bid) || listingData.start_bid <= 0) {
+                    showError('Please enter a valid starting bid greater than 0');
+                    return;
+                }
+                
+                // Submit listing
+                console.log("Calling apiService.addListing...");
+                
+                try {
+                    const response = await apiService.addListing(listingData);
+                    console.log("API response:", response);
+                    
+                    // Redirect to the listing page using the correct ID property
+                    window.location.href = "index.html";
+                } catch (error) {
+                    console.error('Error creating listing:', error);
+                    showError(error.message || 'Failed to create listing');
+                    
+                    // Try to clean up the uploaded image if listing creation fails
+                    try {
+                        if (uploadResult && uploadResult.filename) {
+                            console.log("Cleaning up unused image:", uploadResult.filename);
+                            await apiService.deleteImage(uploadResult.filename);
+                        }
+                    } catch (cleanupError) {
+                        console.error("Failed to clean up image:", cleanupError);
+                    }
+                }
             } catch (error) {
-                console.error('Error creating listing:', error);
-                showError(error.message || 'Failed to create listing');
+                console.error('Error uploading image:', error);
+                showError(error.message || 'Failed to upload image. Please try again.');
             }
         } catch (error) {
             console.error('Error creating listing:', error);

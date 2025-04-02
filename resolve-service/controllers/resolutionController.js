@@ -1,8 +1,6 @@
 const { Resolution } = require('../models');
 const axios = require('axios');
 const resolutionService = require('../services/resolutionService');
-const { executeQuery, biddingPool } = require('../config/database');
-
 
 // Get all resolutions
 exports.getAllResolutions = async (req, res) => {
@@ -129,12 +127,11 @@ exports.resolveExpiredListings = async (req, res) => {
   }
 };
 
-
 // Accept a bid and create resolution
 exports.acceptBid = async (req, res) => {
   try {
     const { bidId, listingId } = req.body;
-
+    
     if (!bidId || !listingId) {
       return res.status(400).json({ message: 'Missing required fields: bidId and listingId' });
     }
@@ -154,19 +151,6 @@ exports.acceptBid = async (req, res) => {
       return res.status(404).json({ message: 'Bid not found' });
     }
 
-    await executeQuery(
-      biddingPool,
-      'UPDATE bids SET status = "accepted" WHERE id = ?',
-      [bidId]
-    );
-    
-    await executeQuery(
-      biddingPool,
-      'UPDATE bids SET status = "cancelled" WHERE listingId = ? AND id != ?',
-      [listingId, bidId]
-    );
-    
-
     // Create resolution record
     const resolutionData = {
       listing_id: listingId,
@@ -175,40 +159,36 @@ exports.acceptBid = async (req, res) => {
       winner_id: bid.bidderId
     };
 
+    // Save resolution record
     const resolution = await Resolution.create(resolutionData);
-    
-    const listingServiceUrl = process.env.LISTING_SERVICE_URL;
-
-    await axios.put(`${listingServiceUrl}/api/listings/${listingId}`, {
-      status: 'ended'
-    });
     
     // Send notification if email headers are present
     const email = req.headers['x-user-email'];
     const username = req.headers['x-user-name'];
-
+    
     if (email) {
       try {
+        // why is this port 3000?
         await axios.post(`http://notification:3000/notify/email`, {
-          email,
+          email: email,
           subject: 'Bid Accepted',
           text: `Hello ${username || 'there'},\n\nYour bid of $${bid.amount} has been accepted.\n\nThank you for using our service!`
         });
       } catch (notifyError) {
         console.error('Failed to send notification:', notifyError.message);
-        // Don’t block resolution flow if notification fails
+        // Continue - don't fail the operation just because notification failed
       }
     }
 
     return res.status(200).json({
       message: 'Bid accepted and resolution created successfully',
-      resolution
+      resolution: resolution
     });
   } catch (error) {
     console.error('Error accepting bid:', error);
-    return res.status(500).json({
-      message: 'Failed to accept bid and create resolution',
-      error: error.message
+    return res.status(500).json({ 
+      message: 'Failed to accept bid and create resolution', 
+      error: error.message 
     });
   }
-};
+}; 

@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const endTimeElement = document.getElementById('listing-end-time');
     const bidsCountElement = document.getElementById('listing-bids-count');
     const descriptionElement = document.getElementById('listing-description');
+    const listingImageElement = document.getElementById('listing-image');
     
     const bidHistoryContainer = document.getElementById('bid-history-container');
     const noBidsMessage = document.getElementById('no-bids-message');
@@ -82,10 +83,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Render listing details
-    async function renderListingDetails(listing) {
+    function renderListingDetails(listing) {
         // Set basic listing info
         titleElement.textContent = listing.name;
         idElement.textContent = `ID: ${listing.listing_id}`;
+        
+        // Load and display the listing image
+        if (listing.image) {
+            // Try to load the image from the API
+            loadListingImage(listing.image)
+                .then(imageUrl => {
+                    listingImageElement.src = imageUrl;
+                    listingImageElement.classList.remove('hidden');
+                    listingImageElement.parentElement.classList.remove('hidden');
+                })
+                .catch(error => {
+                    console.error('Failed to load image:', error);
+                    // If image loading fails, show default image
+                    listingImageElement.src = 'images/default-organ.jpg';
+                    listingImageElement.classList.remove('hidden');
+                    listingImageElement.parentElement.classList.remove('hidden');
+                });
+        } else {
+            // If no image, show default
+            listingImageElement.src = 'images/default-organ.jpg';
+            listingImageElement.classList.remove('hidden');
+            listingImageElement.parentElement.classList.remove('hidden');
+        }
         
         // Check if listing is expired based on end time
         const currentTime = new Date();
@@ -158,33 +182,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Show winner section if there are bids
             if (listing.bids && listing.bids.length > 0) {
-                try {
-                    const resolutionServiceUrl = 'http://localhost:8000/resolve'; // or use ENV if abstracted
-                    const res = await axios.get(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id}`);
-                    const resolution = res.data;
-            
-                    winnerContainer.innerHTML = `
-                        <div class="bg-green-100 p-4 rounded-md mt-6">
-                            <h3 class="text-sm font-medium text-green-800">🏆 Winner Selected</h3>
-                            <p class="text-sm text-green-700">
-                                Bidder ID: <strong>${resolution.winner_id}</strong> |
-                                Winning Bid: $${resolution.winning_bid}
-                            </p>
-                        </div>
-                    `;
-                } catch (error) {
-                    console.warn('❌ No resolution found yet. Fallback to top bid.');
-                    const topBid = [...listing.bids].sort((a, b) => b.bid_amt - a.bid_amt)[0];
-            
-                    winnerContainer.innerHTML = `
-                        <div class="bg-yellow-100 p-4 mt-4 rounded-lg text-center shadow">
-                            <p class="text-yellow-800 font-semibold">🏆 Winner: Bidder #${topBid.bidder_id}</p>
-                            <p class="text-yellow-700 text-sm mt-1">Winning Bid: $${topBid.bid_amt.toLocaleString()}</p>
-                            <p class="text-yellow-700 text-sm mt-1">Description: ${listing.description || 'No description provided'}</p>
-                        </div>
-                    `;
-                }
-            } 
+                winnerContainer.innerHTML = ''; // Clear old content
+                const topBid = [...listing.bids].sort((a, b) => b.bid_amt - a.bid_amt)[0];
+                
+                const winnerSection = document.createElement('div');
+                winnerSection.className = 'bg-yellow-100 p-4 mt-4 rounded-lg text-center shadow';
+                winnerSection.innerHTML = `
+                    <p class="text-yellow-800 font-semibold">🏆 Winner: Bidder #${topBid.bidder_id}</p>
+                    <p class="text-yellow-700 text-sm mt-1">Winning Bid: $${topBid.bid_amt.toLocaleString()}</p>
+                    <p class="text-yellow-700 text-sm mt-1">Description: ${listing.description || 'No description provided'}</p>
+                `;
+                winnerContainer.appendChild(winnerSection);
+            } else {
+                // Show a message if no bids were placed
+                winnerContainer.innerHTML = `
+                    <div class="bg-gray-100 p-4 mt-4 rounded-lg text-center shadow">
+                        <p class="text-gray-800">This listing has ended with no bids.</p>
+                    </div>
+                `;
+            }
         } else {
             // Show the bid form and hide winner section for active listings
             placeBidForm.classList.remove('hidden');
@@ -214,7 +230,6 @@ document.addEventListener('DOMContentLoaded', function() {
       
     // Render bid history
     function renderBidHistory(bids, isActive) {
-
         if (!bids || bids.length === 0) {
             noBidsMessage.classList.remove('hidden');
             bidsList.classList.add('hidden');
@@ -242,94 +257,69 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Get the status element
             const statusElement = clone.querySelector('.bid-status');
-
-            if (bid.status === 'accepted') {
+            
+            // Check if bid has a meaningful status (e.g., 'accepted')
+            // First check if bid has an explicit 'accepted' property that might come from the resolve service
+            let isAccepted = bid.accepted === true || bid.status === 'accepted';
+            
+            // If the bid is accepted, show the status
+            if (isAccepted) {
                 statusElement.textContent = 'Accepted';
                 statusElement.classList.add('bid-status-accepted');
                 statusElement.classList.remove('hidden');
-              } else if (bid.status === 'cancelled') {
-                statusElement.textContent = 'Rejected';
-                statusElement.classList.add('bid-status-rejected');
-                statusElement.classList.remove('hidden');
-              } else {
-                // If no status, hide the status element
+            } else {
+                // Otherwise hide the status element
                 statusElement.classList.add('hidden');
-              }
-            
-            // // Check if bid has a meaningful status (e.g., 'accepted')
-            // // First check if bid has an explicit 'accepted' property that might come from the resolve service
-            // let isAccepted = bid.accepted === true || bid.status === 'accepted';
-            
-            // // If the bid is accepted, show the status
-            // if (isAccepted) {
-            //     statusElement.textContent = 'Accepted';
-            //     statusElement.classList.add('bid-status-accepted');
-            //     statusElement.classList.remove('hidden');
-            // } else {
-            //     // Otherwise hide the status element
-            //     statusElement.classList.add('hidden');
-            // }
+            }
             
             // Add accept button for bids if user is the listing owner AND listing is active
             // Only show the accept button if the bid is not already accepted
-
-            const isAccepted = bid.status === 'accepted';
-
-
             if (isListingOwner && isActive && !isAccepted) {
                 const acceptButton = document.createElement('button');
                 acceptButton.textContent = 'Accept Bid';
                 acceptButton.classList.add('accept-bid-btn', 'ml-2', 'px-2', 'py-1', 'text-xs', 
                     'bg-green-500', 'text-white', 'rounded', 'hover:bg-green-600');
-            
-                    acceptButton.addEventListener('click', async (event) => {
-                        event.preventDefault();
-                        try {
-                          const urlParams = new URLSearchParams(window.location.search);
-                          const listingId = urlParams.get('id');
-                      
-                          // Call API to accept the bid
-                          await apiService.acceptBid(bid.bid_id, listingId);
-                      
-                          // 🔄 Update status in UI
-                          statusElement.textContent = 'Accepted';
-                          statusElement.classList.remove('hidden');
-                          statusElement.classList.add('bid-status-accepted');
-                      
-                          // 🚫 Remove the accept button
-                          acceptButton.remove();
-                      
-                          // ✅ Disable all other accept buttons (optional)
-                          document.querySelectorAll('.accept-bid-btn').forEach(btn => btn.remove());
-                      
-                          // 🎯 Show winner section
-                          const winnerContainer = document.getElementById('winner-section-container');
-                          winnerContainer.innerHTML = `
-                            <div class="bg-green-100 p-4 rounded-md mt-6">
-                              <h3 class="text-sm font-medium text-green-800">🏆 Winner Selected</h3>
-                              <p class="text-sm text-green-700">
-                                Bidder ID: <strong>${bid.bidder_id}</strong> | Winning Bid: $${bid.bid_amt}
-                              </p>
-                            </div>
-                          `;
-                      
-                          showToast("✅ Bid accepted successfully!");
-                          
-                        } catch (error) {
-                          console.error('Error accepting bid:', error);
-                          showError('Failed to accept bid: ' + error.message);
-                        }
-                      });
-                      
-            
-                // Append to controls
+                
+                acceptButton.addEventListener('click', async (event) => {
+                    event.preventDefault();
+                    try {
+                        // Get listingId from URL parameter instead of bid object
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const listingId = urlParams.get('id');
+                        
+                        console.log("Accepting bid with data:", {
+                            bidId: bid.bid_id,
+                            listingId: listingId
+                        });
+                        
+                        await apiService.acceptBid(bid.bid_id, listingId);
+                        // Show immediate visual feedback before reload
+                        statusElement.textContent = 'Accepted';
+                        statusElement.classList.add('bid-status-accepted');
+                        statusElement.classList.remove('hidden');
+                        
+                        // Remove the accept button
+                        acceptButton.remove();
+                        
+                        // Short delay before refresh to show the status change
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                        
+                    } catch (error) {
+                        console.error('Error accepting bid:', error);
+                        showError('Failed to accept bid: ' + error.message);
+                    }
+                });
+                
+                // Find the container to append the button
                 const controlsContainer = clone.querySelector('.bid-controls-container .flex');
                 if (controlsContainer) {
                     controlsContainer.appendChild(acceptButton);
                 } else {
                     statusElement.parentNode.appendChild(acceptButton);
                 }
-            }            
+            }
             
             bidsList.appendChild(clone);
         });
@@ -469,6 +459,22 @@ document.addEventListener('DOMContentLoaded', function() {
     backToListingsButton.addEventListener('click', function() {
         window.location.href = 'index.html';
     });
+    
+    // Function to load the listing image
+    async function loadListingImage(imageName) {
+        try {
+            if (imageName === 'default-organ.jpg') {
+                return 'images/default-organ.jpg';
+            }
+            
+            // Use the apiService to get the image URL
+            const imageUrl = await apiService.getImage(imageName);
+            return imageUrl;
+        } catch (error) {
+            console.error('Error loading image:', error);
+            return 'images/default-organ.jpg';
+        }
+    }
     
     // Initialize the page
     fetchListingDetails();

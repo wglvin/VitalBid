@@ -55,6 +55,19 @@
             <div class="border-t border-gray-200">
                 <form id="create-listing-form" class="px-4 py-5 sm:p-6">
                     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+
+                        <div class="sm:col-span-6">
+                            <label for="listing-image" class="block text-sm font-medium text-gray-700">Organ Image</label>
+                            <div class="mt-1">
+                                <input type="file" name="listing-image" id="listing-image" accept="image/*" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" required>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500">Upload an image of the organ (JPG, PNG, or GIF, max 5MB)</p>
+                            <div id="image-preview" class="mt-2 hidden">
+                                <img id="preview-img" class="max-h-48 rounded-lg shadow-sm" alt="Preview">
+                            </div>
+                        </div>
+                    </div>
+                    
                         <div class="sm:col-span-4">
                             <label for="listing-name" class="block text-sm font-medium text-gray-700">Listing Title</label>
                             <div class="mt-1">
@@ -96,7 +109,6 @@
                                 <input type="datetime-local" name="expiry-date" id="expiry-date" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" required>
                             </div>
                         </div>
-                    </div>
 
                     <div class="mt-6">
                         <p id="form-error" class="text-sm text-red-600 mb-4 hidden"></p>

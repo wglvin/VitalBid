@@ -61,27 +61,35 @@ document.addEventListener('DOMContentLoaded', function() {
             // Set listing data
             clone.querySelector('.listing-title').textContent = listing.name;
             clone.querySelector('.listing-id').textContent = `ID: ${listing.listing_id}`;
-            clone.querySelector('.organ-id').textContent = `Organ: ${listing.organ_type || listing.organ?.type || 'N/A'}`;
-
-
+            
             // Set listing image
             if (clone.querySelector('.listing-image')) {
-                clone.querySelector('.listing-image').src = listing.image || 'default-organ.jpg';
-                clone.querySelector('.listing-image').alt = listing.name;
+                const imageElement = clone.querySelector('.listing-image');
+                
+                // Handle image loading
+                if (listing.image && listing.image !== 'default-organ.jpg') {
+                    // Use a function to load the image asynchronously
+                    loadListingImage(listing.image)
+                        .then(imageUrl => {
+                            imageElement.src = imageUrl;
+                        })
+                        .catch(error => {
+                            console.error('Failed to load image:', error);
+                            imageElement.src = 'images/default-organ.jpg';
+                        });
+                } else {
+                    imageElement.src = 'images/default-organ.jpg';
+                }
+                
+                imageElement.alt = listing.name;
             }
             
             // Set status badge (based on computed status)
             const statusBadge = clone.querySelector('.listing-status');
             if (statusBadge) {
-                if (listing.status === 'ended') {
-                    statusBadge.textContent = 'Ended';
-                    statusBadge.classList.add('bg-gray-300', 'text-gray-700', 'px-2', 'py-1', 'rounded', 'text-xs', 'font-semibold');
-                } else if (listing.status === 'active') {
-                    statusBadge.textContent = 'Active';
-                    statusBadge.classList.add('bg-green-100', 'text-green-800', 'px-2', 'py-1', 'rounded', 'text-xs', 'font-semibold');
-                } else {
-                    statusBadge.textContent = listing.status;
-                }
+                const isActive = listing.status === 'active';
+                statusBadge.textContent = isActive ? 'Active' : 'Ended';
+                statusBadge.classList.add(isActive ? 'status-active' : 'status-ended');
             }
             
             // Set pricing data
@@ -118,6 +126,22 @@ document.addEventListener('DOMContentLoaded', function() {
             
             container.appendChild(clone);
         });
+    }
+
+    // Function to load listing image using apiService
+    async function loadListingImage(imageName) {
+        try {
+            if (imageName === 'default-organ.jpg') {
+                return 'images/default-organ.jpg';
+            }
+            
+            // Use the apiService to get the image URL
+            const imageUrl = await apiService.getImage(imageName);
+            return imageUrl;
+        } catch (error) {
+            console.error('Error loading image:', error);
+            return 'images/default-organ.jpg';
+        }
     }
 
     // Get formatted time remaining string
