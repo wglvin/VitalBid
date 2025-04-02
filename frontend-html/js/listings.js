@@ -108,9 +108,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Get resolutions for all listings to check their status
-        const checkResolutions = async () => {
+        // Get resolutions and organ types for all listings
+        const checkResolutionsAndOrgans = async () => {
             for (const listing of listings) {
+                // Check for resolution status
                 if (listing.status === 'ended') {
                     try {
                         const resolutionServiceUrl = 'http://localhost:8000/resolve';
@@ -121,6 +122,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     } catch (error) {
                         console.warn(`Could not fetch resolution for listing ${listing.listing_id}:`, error);
+                    }
+                }
+                
+                // Fetch organ type if we have an organ_id but no organ_type yet
+                if (listing.organ_id && !listing.organ_type) {
+                    try {
+                        const organ = await apiService.getOrganById(listing.organ_id);
+                        if (organ && organ.type) {
+                            listing.organ_type = organ.type;
+                            console.log(`✅ Fetched organ type for listing ${listing.listing_id}: ${organ.type}`);
+                        }
+                    } catch (error) {
+                        console.warn(`Could not fetch organ type for listing ${listing.listing_id}:`, error);
                     }
                 }
             }
@@ -137,7 +151,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Set listing data
                 clone.querySelector('.listing-title').textContent = listing.name;
                 clone.querySelector('.listing-id').textContent = `ID: ${listing.listing_id}`;
-                clone.querySelector('.organ-id').textContent = `Organ: ${listing.organ_type || listing.organ?.type || 'N/A'}`;
+                
+                // Set organ type with proper fallbacks
+                const organTypeElement = clone.querySelector('.organ-id');
+                if (organTypeElement) {
+                    // Check for organ type in different possible locations
+                    const organType = listing.organ_type || 
+                                     (listing.organ && listing.organ.type) || 
+                                     listing.organType || 
+                                     'Unknown';
+                    organTypeElement.textContent = `Organ: ${organType}`;
+                }
 
                 // Set listing image
                 if (clone.querySelector('.listing-image')) {
@@ -238,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Call the async function to check resolutions and render listings
-        checkResolutions();
+        checkResolutionsAndOrgans();
     }
 
     // Function to load listing image using apiService

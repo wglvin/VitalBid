@@ -97,6 +97,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Continue without resolution info
             }
             
+            // Fetch organ type if not already available
+            if (listing.organ_id && !listing.organ_type) {
+                try {
+                    const organ = await apiService.getOrganById(listing.organ_id);
+                    if (organ && organ.type) {
+                        listing.organ_type = organ.type;
+                        console.log(`✅ Fetched organ type for listing details: ${organ.type}`);
+                    }
+                } catch (error) {
+                    console.warn('Could not fetch organ type:', error);
+                    // Continue without organ type
+                }
+            }
+            
             // Render listing details
             await renderListingDetails(listing);
             
@@ -121,6 +135,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set basic listing info
         titleElement.textContent = listing.name;
         idElement.textContent = `ID: ${listing.listing_id}`;
+        
+        // Add organ type display
+        const organTypeElement = document.getElementById('listing-organ-type');
+        if (organTypeElement) {
+            // Check for organ type in different possible locations
+            const organType = listing.organ_type || 
+                             (listing.organ && listing.organ.type) || 
+                             listing.organType || 
+                             'N/A';
+            organTypeElement.textContent = `Organ: ${organType}`;
+        }
         
         // Load and display the listing image
         if (listing.image) {

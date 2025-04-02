@@ -36,6 +36,17 @@ document.addEventListener('DOMContentLoaded', function() {
         clone.querySelector('.listing-title').textContent = listing.name;
         clone.querySelector('.listing-id').textContent = `ID: ${listing.listing_id}`;
 
+        // Set organ type with proper fallbacks
+        const organTypeElement = clone.querySelector('.listing-organ-type');
+        if (organTypeElement) {
+            // Check for organ type in different possible locations
+            const organType = listing.organ_type || 
+                             (listing.organ && listing.organ.type) || 
+                             listing.organType || 
+                             'Unknown';
+            organTypeElement.textContent = `Organ: ${organType}`;
+        }
+
         // Set listing image
         const imageElement = clone.querySelector('.listing-image');
         if (imageElement) {
@@ -150,6 +161,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const expiryTime = new Date(listing.time_end);
         const isActive = currentTime < expiryTime && !listing.is_resolved;
 
+        // Get organ type with proper fallbacks
+        const organType = listing.organ_type || 
+                         (listing.organ && listing.organ.type) || 
+                         listing.organType || 
+                         'Unknown';
+
         // Prepare status display
         let statusHTML = '';
         if (isActive) {
@@ -208,6 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">${listing.name}</div>
                 <div class="text-sm text-gray-500">ID: ${listing.listing_id}</div>
+                <div class="text-sm text-gray-500">Organ: ${organType}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 ${statusHTML}
@@ -373,6 +391,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     // If error fetching resolution, compute status based on time
                     const isExpired = new Date(listing.time_end) <= new Date();
                     listing.status = isExpired ? 'ended' : 'active';
+                }
+                
+                // Fetch organ type if not already available
+                if (listing.organ_id && !listing.organ_type) {
+                    try {
+                        const organ = await apiService.getOrganById(listing.organ_id);
+                        if (organ && organ.type) {
+                            listing.organ_type = organ.type;
+                            console.log(`✅ Fetched organ type for my listing ${listing.listing_id}: ${organ.type}`);
+                        }
+                    } catch (error) {
+                        console.warn(`Could not fetch organ type for listing ${listing.listing_id}:`, error);
+                    }
                 }
             };
             
