@@ -162,7 +162,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                      'Unknown';
                     organTypeElement.textContent = `Organ: ${organType}`;
                 }
-
                 // Set listing image
                 if (clone.querySelector('.listing-image')) {
                     // Try to load the image through the apiService

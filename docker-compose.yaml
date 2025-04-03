@@ -92,6 +92,7 @@ services:
     volumes:
       - ./list-service:/app
       - /app/node_modules
+      - list_service_uploads:/app/uploads
 
   # # Bidding Microservice comment out if want external
   bid-service:
@@ -279,3 +280,4 @@ volumes:
   listing_mysql_data:
   bidding_mysql_data:
   resolving_mysql_data:
+  list_service_uploads:

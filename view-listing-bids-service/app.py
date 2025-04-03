@@ -150,6 +150,18 @@ def get_listings_with_bids():
             # Now compare the two naive datetimes
             derived_status = 'active' if expiry_time > current_time else 'ended'
 
+            # Fetch organ details using getOrganById endpoint
+            organ_type = None
+            if listing['organId']:
+                try:
+                    organ_response = requests.get(f"{LISTING_SERVICE_URL}/api/organs/{listing['organId']}")
+                    if organ_response.status_code == 200:
+                        organ_data = organ_response.json()
+                        organ_type = organ_data.get('type')
+                        app.logger.info(f"Fetched organ type for listing {listing_id}: {organ_type}")
+                except Exception as e:
+                    app.logger.error(f"Error fetching organ for listing {listing_id}: {str(e)}")
+            
             # Create combined listing object with bids
             listing_with_bids = {
                 'listing_id': listing['id'],
@@ -159,6 +171,7 @@ def get_listings_with_bids():
                 'start_bid': float(listing['startingPrice']),
                 'status': derived_status,  # Keep this derived status for listings
                 'organ_id': listing['organId'],
+                'organ_type': organ_type,  # Include the organ type in the response
                 'owner_id': listing['ownerId'],
                 'image': listing.get('image', 'default-organ.jpg'),  # Added image with default
                 'current_bid': highest_bid['bid_amt'] if highest_bid else None,

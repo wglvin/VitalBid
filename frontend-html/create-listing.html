@@ -56,7 +56,7 @@
                 <form id="create-listing-form" class="px-4 py-5 sm:p-6">
                     <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
 
-                        <div class="sm:col-span-6">
+                        <div class="sm:col-span-6 mb-4">
                             <label for="listing-image" class="block text-sm font-medium text-gray-700">Organ Image</label>
                             <div class="mt-1">
                                 <input type="file" name="listing-image" id="listing-image" accept="image/*" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" required>
@@ -66,16 +66,15 @@
                                 <img id="preview-img" class="max-h-48 rounded-lg shadow-sm" alt="Preview">
                             </div>
                         </div>
-                    </div>
-                    
-                        <div class="sm:col-span-4">
+
+                        <div class="sm:col-span-4 mb-4">
                             <label for="listing-name" class="block text-sm font-medium text-gray-700">Listing Title</label>
                             <div class="mt-1">
                                 <input type="text" name="listing-name" id="listing-name" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" required>
                             </div>
                         </div>
 
-                        <div class="sm:col-span-6">
+                        <div class="sm:col-span-6 mb-4">
                             <label for="listing-description" class="block text-sm font-medium text-gray-700">Description</label>
                             <div class="mt-1">
                                 <textarea id="listing-description" name="listing-description" rows="3" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"></textarea>
@@ -83,7 +82,7 @@
                             <p class="mt-2 text-sm text-gray-500">Brief description of the organ and condition.</p>
                         </div>
 
-                        <div class="sm:col-span-3">
+                        <div class="sm:col-span-3 mb-4">
                             <label for="organ-id" class="block text-sm font-medium text-gray-700">Organ</label>
                             <div class="mt-1">
                                 <select id="organ-id" name="organ-id" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" required>
@@ -93,7 +92,7 @@
                             </div>
                         </div>
 
-                        <div class="sm:col-span-3">
+                        <div class="sm:col-span-3 mb-4">
                             <label for="starting-bid" class="block text-sm font-medium text-gray-700">Starting Bid ($)</label>
                             <div class="mt-1 relative rounded-md shadow-sm">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -103,7 +102,7 @@
                             </div>
                         </div>
 
-                        <div class="sm:col-span-3">
+                        <div class="sm:col-span-3 mb-4">
                             <label for="expiry-date" class="block text-sm font-medium text-gray-700">Listing End Date</label>
                             <div class="mt-1">
                                 <input type="datetime-local" name="expiry-date" id="expiry-date" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" required>
