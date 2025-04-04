@@ -1,6 +1,7 @@
 const { 
     sendDynamicEmailNotification,
-    processListingCreatedEvent 
+    processListingCreatedEvent,
+    processBidAcceptedEvent
 } = require('../services/notificationService');
 
 // Repurpose the sendEmail function to use sendDynamicEmailNotification
@@ -34,8 +35,29 @@ const healthCheck = (req, res) => {
     res.status(200).send({ status: 'UP', service: 'notification' });
 };
 
+// Handle Kafka events
+const handleKafkaEvent = async (event) => {
+    try {
+        console.log('Processing Kafka event:', event.type);
+        
+        switch (event.type) {
+            case 'LISTING_CREATED':
+                return await processListingCreatedEvent(event);
+            case 'BID_ACCEPTED':
+                return await processBidAcceptedEvent(event);
+            default:
+                console.warn('Unknown event type:', event.type);
+                return { status: 'ignored', message: 'Unknown event type' };
+        }
+    } catch (error) {
+        console.error('Error handling Kafka event:', error);
+        return { status: 'error', message: error.message };
+    }
+};
+
 module.exports = {
     sendEmail,
     sendDynamicEmail,
-    healthCheck
+    healthCheck,
+    handleKafkaEvent
 };

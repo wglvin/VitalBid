@@ -53,19 +53,29 @@ const setupKafkaConsumer = async () => {
         await consumer.connect();
         console.log('Connected to Kafka');
 
+        // Subscribe to listings topic
         await consumer.subscribe({ 
             topic: config.kafka.topics.listings, 
             fromBeginning: true
         });
         console.log(`Subscribed to topic: ${config.kafka.topics.listings}`);
 
+        // Subscribe to bid events topic
+        await consumer.subscribe({ 
+            topic: config.kafka.topics.bids, 
+            fromBeginning: true
+        });
+        console.log(`Subscribed to topic: ${config.kafka.topics.bids}`);
+
         await consumer.run({
             eachMessage: async ({ topic, partition, message }) => {
                 try {
                     const messageValue = JSON.parse(message.value.toString());
                     
-                    if (messageValue.type === 'ListingCreated') {
+                    if (topic === config.kafka.topics.listings && messageValue.type === 'ListingCreated') {
                         await processListingCreatedEvent(messageValue.data);
+                    } else if (topic === config.kafka.topics.bids && messageValue.type === 'BID_ACCEPTED') {
+                        await processBidAcceptedEvent(messageValue.data);
                     }
                 } catch (error) {
                     console.error('Error processing Kafka message:', error);

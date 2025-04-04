@@ -142,7 +142,55 @@ The Organ Marketplace Team`;
     }
 };
 
+const processBidAcceptedEvent = async (event) => {
+    try {
+        console.log('Processing bid accepted event:', JSON.stringify(event));
+        
+        if (!event) {
+            throw new Error('Event object is undefined');
+        }
+        
+        const { bidderId, bidAmount, email, username } = event;
+        
+        if (!bidderId) {
+            console.warn('No bidderId found in event, event data:', JSON.stringify(event));
+        }
+        
+        // If email is available from the event, use it
+        let recipientEmail = email;
+        let recipientName = username || `User ${bidderId}`;
+        
+        // If no email provided, attempt to look up the bidder's email
+        if (!recipientEmail || !recipientEmail.includes('@')) {
+            console.log(`No valid email in event, looking up email for user ${bidderId}`);
+            recipientEmail = await simulateGetUserEmailFromDatabase(bidderId);
+        }
+        
+        const greeting = recipientName ? `Hello ${recipientName},` : 'Hello,';
+        
+        const subject = 'Your Bid Was Accepted!';
+        const text = `${greeting}
+        
+Congratulations! Your bid of $${bidAmount} has been accepted.
+
+Please proceed to payment to complete the transaction.
+
+Thank you for using Organ Marketplace!
+
+Best regards,
+The Organ Marketplace Team`;
+
+        await sendDynamicEmailNotification(recipientEmail, subject, text);
+        return { status: 'success', message: 'Bid acceptance notification sent' };
+    } catch (error) {
+        console.error('Error processing bid accepted event:', error);
+        console.error('Event data:', JSON.stringify(event));
+        throw error;
+    }
+};
+
 module.exports = {
     sendDynamicEmailNotification,
-    processListingCreatedEvent
+    processListingCreatedEvent,
+    processBidAcceptedEvent
 };

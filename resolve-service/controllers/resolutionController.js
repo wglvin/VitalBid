@@ -1,6 +1,8 @@
 const { Resolution } = require('../models');
 const axios = require('axios');
 const resolutionService = require('../services/resolutionService');
+const { produceMessage } = require('../services/kafkaService');
+const config = require('../config');
 
 // Get all resolutions
 exports.getAllResolutions = async (req, res) => {
@@ -162,22 +164,28 @@ exports.acceptBid = async (req, res) => {
     // Save resolution record
     const resolution = await Resolution.create(resolutionData);
     
-    // Send notification if email headers are present
+    // Get information from request headers
     const email = req.headers['x-user-email'];
     const username = req.headers['x-user-name'];
     
-    if (email) {
-      try {
-        // why is this port 3000?
-        await axios.post(`http://notification:3000/notify/email`, {
+    // Send notification via Kafka
+    try {
+      await produceMessage(config.kafka.topics.bids, {  
+        type: 'BID_ACCEPTED',
+        data: {  // Wrap event data in a 'data' property to match the listing event structure
+          bidderId: bid.bidderId,
+          bidId: bidId,
+          listingId: listingId,
+          bidAmount: bid.amount,
           email: email,
-          subject: 'Bid Accepted',
-          text: `Hello ${username || 'there'},\n\nYour bid of $${bid.amount} has been accepted.\n\nThank you for using our service!`
-        });
-      } catch (notifyError) {
-        console.error('Failed to send notification:', notifyError.message);
-        // Continue - don't fail the operation just because notification failed
-      }
+          username: username,
+          timestamp: new Date().toISOString()
+        }
+      });
+      console.log('Bid acceptance notification sent to Kafka');
+    } catch (kafkaError) {
+      console.error('Failed to send bid acceptance notification to Kafka:', kafkaError.message);
+      // Continue - don't fail the operation just because notification failed
     }
 
     return res.status(200).json({
@@ -191,4 +199,4 @@ exports.acceptBid = async (req, res) => {
       error: error.message 
     });
   }
-}; 
+};
