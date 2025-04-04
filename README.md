@@ -1,22 +1,30 @@
 # Organ Auction Platform
 
 ## Description
-Our organ auction platform addresses the critical shortage of accessible organ procurement systems by creating a free marketplace for people who require organ to source for them.
+Our organ auction platform addresses the critical shortage of accessible organ procurement systems by creating a free marketplace for people who require organs to source for them. The frontend communicates with the backend microservices through the Kong API Gateway, there is ZERO direct frontend interaction with all microservices.
 
 Key features of our organ auction platform include:
 1.	Secure registration for both buyers and sellers
-2.	Real-time bidding system for available organs
+2.	Creation of Organ Types/ Listings
+3.	Real-time bidding system for available listings
+4.	Support Payments through Stripe Payments API
+5.	Receive Email Notification through Mailgun API
+
+Frontend also allows:
+1.	View all organ listings with filtering by status (active/ended)
+2.	View listing details with bid history
+3.	View one's bids/listings
+
+## File Structure
+- Frontend Built and Run in frontend-html folder, run by nginx
+- Backend Microservices are each in their seperate folder, each run by flask OR node.js
 
 ## Prerequisites
 - Docker 27.5.1
 - Ensure that ports to be used are not currently used by other programs
+- Approved Mailgun email request, search for "Mailgun<support@mailgun.net>" in inbox, cXXXXXXt@smu.edu.sg & lXXXXXXg@smu.edu.sg have been requested
 
-## File Structure
-Frontend Folder: Website, run by node.js
-Backend Folder: Microservices, each run by flask OR node.js
-
-
-## Running ALL Docker Images 
+## Running Repo 
 1. Check if any docker images are already running
    ```sh
    docker ps
@@ -60,18 +68,6 @@ Backend Folder: Microservices, each run by flask OR node.js
 8001: Kong Admin </br>
 8092: Kafka Microservice </br>
 8093: Zookeeper Microservice </br>
-
-## Frontend
-
-The application uses a simple HTML/CSS/JavaScript-based frontend served by Nginx. The frontend communicates with the backend microservices through the Kong API Gateway, there is ZERO direct frontend interaction with the microservice
-
-Key features:
-- View all organ listings with filtering by status (active/ended)
-- View listing details with bid history
-- Place bids on active listings
-- Create new organ listings
-
-The frontend is built with vanilla JavaScript and styled with TailwindCSS for a clean, responsive design.
 
 ## Troubleshooting Guidelines 
 When unable to use e.g. port 3306, use the following command (in case your mysql is running):
