@@ -66,6 +66,34 @@ def get_bid_history(listing_id):
         app.logger.error(f"Error fetching bid history: {str(e)}")
         return jsonify({'message': 'Failed to fetch bid history', 'error': str(e)}), 500
 
+@app.route('/api/bids/stats/<listing_id>', methods=['GET'])
+def get_bid_statistics(listing_id):
+    """Get bid statistics for a specific listing."""
+    try:
+        app.logger.info(f"Fetching bids for listing ID: {listing_id}")
+        response = requests.get(f"{BIDDING_SERVICE_URL}/api/bids/listing/{listing_id}")
+        
+        if response.status_code != 200:
+            app.logger.error(f"Error fetching bids: {response.status_code} - {response.text}")
+            return jsonify({
+                'message': f'Error fetching bids: {response.status_code}',
+                'details': response.text
+            }), response.status_code
+        
+        bids = response.json()
+        app.logger.info(f"Fetched bids: {bids}")
+        
+        stats = calculate_bid_stats(bids)
+        app.logger.info(f"Calculated stats: {stats}")
+        
+        if not stats:
+            return jsonify({'message': 'No bids found for this listing'}), 404
+        
+        return jsonify(stats), 200
+    
+    except Exception as e:
+        app.logger.error(f"Error calculating bid statistics: {str(e)}")
+        return jsonify({'message': 'Internal server error', 'error': str(e)}), 500
 
 def calculate_bid_stats(bids):
     """Calculate statistics for a collection of bids."""
