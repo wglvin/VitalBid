@@ -9,7 +9,7 @@ const getBidderEmail = async (bidderId) => {
         console.log(`Looking up email for bidder ID: ${bidderId}`);
         
         const response = await axios.post(
-            'https://personal-rrotlkrf.outsystemscloud.com/UserAuth/rest/GetEmailById/GetEmail',
+            'http://kong:8000/outsystems/GetEmailById/GetEmail',
             { winnerId: parseInt(bidderId) }
         );
         
@@ -124,16 +124,16 @@ const processListingCreatedEvent = async (listing) => {
         const subject = 'Your Organ Listing Has Been Created';
         const text = `${greeting}
         
-Your listing "${title}" has been successfully created in the Organ Marketplace.
+Your listing "${title}" has been successfully created on VitalBid.
 
 Listing Details:
 Title: ${title}
 Description: ${description}
 
-Thank you for using Organ Marketplace!
+Thank you for using VitalBid!
 
 Best regards,
-The Organ Marketplace Team`;
+The VitalBid Team`;
 
         await sendDynamicEmailNotification(email, subject, text);
         return { status: 'success', message: 'Listing notification sent' };
@@ -151,7 +151,7 @@ const processBidAcceptedEvent = async (event) => {
             throw new Error('Event object is undefined');
         }
         
-        const { bidderId, bidAmount } = event;
+        const { bidderId, listingId, bidAmount } = event;
         
         if (!bidderId) {
             console.warn('No bidderId found in event, event data:', JSON.stringify(event));
@@ -167,12 +167,12 @@ const processBidAcceptedEvent = async (event) => {
         const subject = 'Your Bid Was Accepted!';
         const text = `${greeting}
         
-Congratulations! Your bid of $${bidAmount} has been accepted.
+Congratulations! Your bid of $${bidAmount} for Listing ID ${listingId} has been accepted.
 
-Thank you for using Organ Marketplace!
+Thank you for using Vital Bid!
 
 Best regards,
-The Organ Marketplace Team`;
+The VitalBid Team`;
 
         await sendDynamicEmailNotification(recipientEmail, subject, text);
         return { status: 'success', message: 'Bid acceptance notification sent' };
