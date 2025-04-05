@@ -6,7 +6,7 @@ const apiService = {
   // Helper function to get user data from localStorage
   getUserData() {
     try {
-      const userData = JSON.parse(localStorage.getItem("userData") || '{"userid": 1, "email": "guest@example.com", "username": "Guest"}');
+      const userData = JSON.parse(localStorage.getItem("userData"));
       return userData;
     } catch (error) {
       console.warn("Error parsing userData from localStorage:", error);
@@ -24,9 +24,9 @@ const apiService = {
     }
     
     // Add user metadata headers - use properties as shown in testingRedirect.html example
-    options.headers['X-User-Email'] = userData.email || "guest@example.com";
-    options.headers['X-User-Name'] = userData.username || "Guest";
-    options.headers['X-User-ID'] = userData.userid || userData.id || 1;
+    options.headers['X-User-Email'] = userData.email;
+    options.headers['X-User-Name'] = userData.username;
+    options.headers['X-User-ID'] = userData.userid;
     
     // console.log("Added user metadata to request headers:", {
     //   email: options.headers['X-User-Email'],

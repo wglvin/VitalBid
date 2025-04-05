@@ -55,7 +55,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         for (const listing of listings) {
             const checkPromise = async () => {
-                try {
                     const resolutionServiceUrl = 'http://localhost:8000/resolve';
                     const res = await fetch(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id}`, {
                         // Add this option to silence the console errors for failed requests
@@ -81,11 +80,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         const isExpired = new Date(listing.time_end) <= new Date();
                         listing.status = isExpired ? 'ended' : 'active';
                     }
-                } catch (error) {
-                    // If error fetching resolution, compute status based on time
-                    const isExpired = new Date(listing.time_end) <= new Date();
-                    listing.status = isExpired ? 'ended' : 'active';
-                }
             };
             
             // Add the promise to our array
