@@ -3,7 +3,27 @@ const config = require('../config/config');
 const { produceMessage } = require('../kafka/kafkaProducer');
 const Notification = require('../models/notificationModel');
 
-
+// New function to get bidder email from external API
+const getBidderEmail = async (bidderId) => {
+    try {
+        console.log(`Looking up email for bidder ID: ${bidderId}`);
+        
+        const response = await axios.post(
+            'https://personal-rrotlkrf.outsystemscloud.com/UserAuth/rest/GetEmailById/GetEmail',
+            { winnerId: parseInt(bidderId) }
+        );
+        
+        if (response.data && response.data.winnerEmail) {
+            console.log(`Found email for bidder ID ${bidderId}: ${response.data.winnerEmail}`);
+            return response.data.winnerEmail;
+        } else {
+            throw new Error(`No email found for bidder ID: ${bidderId}`);
+        }
+    } catch (error) {
+        console.error(`Error fetching email for bidder ID ${bidderId}:`, error.message);
+        throw error;
+    }
+};
 
 // Updated function to exactly match the Python example structure
 const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
@@ -11,6 +31,13 @@ const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
     let userId = null;
     
     try {
+        // Check if this looks like an email address
+        if (!userIdOrEmail.includes('@')) {
+            // If not an email, treat as userId and look up
+            userId = userIdOrEmail;
+            throw new Error('Email must be provided directly; ID lookup is not supported');
+        }
+        
         // Use the Python-style exact API call to Mailgun
         const mailgunUrl = `https://api.mailgun.net/v3/${config.mailgun.domain}/messages`;
         
@@ -83,10 +110,15 @@ const processListingCreatedEvent = async (listing) => {
         
         // Prioritize the email from the Kafka message
         let email = listing.email;
-        console.log(`the received email was ${email}`)
-
-        const username = listing.username || `User ${userId || 'unknown'}`;
         
+        // Only fall back to database lookup if no email was provided
+        if (!email || !email.includes('@')) {
+            console.log(`No valid email in message`);
+        }
+        
+        const username = listing.username;
+        
+        // Use username in greeting if available
         const greeting = username ? `Hello ${username},` : 'Hello,';
         
         const subject = 'Your Organ Listing Has Been Created';
@@ -119,24 +151,23 @@ const processBidAcceptedEvent = async (event) => {
             throw new Error('Event object is undefined');
         }
         
-        const { bidderId, bidAmount, email, username } = event;
+        const { bidderId, bidAmount } = event;
         
         if (!bidderId) {
             console.warn('No bidderId found in event, event data:', JSON.stringify(event));
+            throw new Error('Bid event missing required bidderId field');
         }
         
-        // If email is available from the event, use it
-        let recipientEmail = email;
-        let recipientName = username || `User ${bidderId}`;
+        // Get bidder's email using the external API
+        const recipientEmail = await getBidderEmail(bidderId);
         
-        const greeting = recipientName ? `Hello ${recipientName},` : 'Hello,';
+        // Use simple greeting
+        const greeting = 'Hi There!';
         
         const subject = 'Your Bid Was Accepted!';
         const text = `${greeting}
         
 Congratulations! Your bid of $${bidAmount} has been accepted.
-
-Please proceed to payment to complete the transaction.
 
 Thank you for using Organ Marketplace!
 
@@ -155,5 +186,6 @@ The Organ Marketplace Team`;
 module.exports = {
     sendDynamicEmailNotification,
     processListingCreatedEvent,
-    processBidAcceptedEvent
+    processBidAcceptedEvent,
+    getBidderEmail  // Export for potential testing
 };
