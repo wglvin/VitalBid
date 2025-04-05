@@ -45,7 +45,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('ended-count').textContent = endedListings.length;
             document.getElementById('all-count').textContent = data.length;
         } catch (error) {
-            console.error('Failed to fetch listings:', error);
             loadingIndicator.innerHTML = `<p class="text-red-500">Error loading listings: ${error.message}</p>`;
         }
     }
@@ -58,7 +57,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const checkPromise = async () => {
                 try {
                     const resolutionServiceUrl = 'http://localhost:8000/resolve';
-                    const res = await fetch(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id}`);
+                    const res = await fetch(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id}`, {
+                        // Add this option to silence the console errors for failed requests
+                        cache: 'no-cache',
+                        // Prevent fetch from throwing network errors to console
+                        silent: true
+                    }).catch(() => ({ok: false}));  // Catch network errors and return a "not ok" response
+                    
                     if (res.ok) {
                         const resolution = await res.json();
                         // Mark the listing as resolved
@@ -71,8 +76,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             listing.winner_id = resolution.winner_id;
                             listing.winning_bid = resolution.winning_bid;
                         }
-                        
-                        console.log(`Listing ${listing.listing_id} has resolution status: ${resolution.status}`);
                     } else {
                         // If no resolution is found, compute status based on time
                         const isExpired = new Date(listing.time_end) <= new Date();
@@ -92,9 +95,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Wait for all resolution checks to complete
         await Promise.all(resolutionPromises);
         
-        // Log the statuses for debugging
-        console.log("Listing statuses after resolution check:", 
-            listings.map(l => ({id: l.listing_id, status: l.status, resolution: l.resolution_status})));
     }
 
     // Render listings to a container element
@@ -115,7 +115,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (listing.status === 'ended') {
                     try {
                         const resolutionServiceUrl = 'http://localhost:8000/resolve';
-                        const res = await fetch(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id}`);
+                        const res = await fetch(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id}`, {
+                            signal: controller.signal
+                        }).catch(() => null);  // Silently catch network errors
+                        
                         if (res.ok) {
                             const resolution = await res.json();
                             listing.resolution_status = resolution.status; // early, accepted, cancelled
@@ -131,7 +134,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         const organ = await apiService.getOrganById(listing.organ_id);
                         if (organ && organ.type) {
                             listing.organ_type = organ.type;
-                            console.log(`✅ Fetched organ type for listing ${listing.listing_id}: ${organ.type}`);
                         }
                     } catch (error) {
                         console.warn(`Could not fetch organ type for listing ${listing.listing_id}:`, error);
@@ -166,14 +168,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (clone.querySelector('.listing-image')) {
                     // Try to load the image through the apiService
                     const imageElement = clone.querySelector('.listing-image');
-                    loadListingImage(listing.image || 'default-organ.jpg')
+                    loadListingImage(listing.image)
                         .then(imageUrl => {
                             imageElement.src = imageUrl;
                         })
-                        .catch(() => {
-                            // Fallback to default image
-                            imageElement.src = 'images/default-organ.jpg';
-                        });
                 }
                 
                 // Set status badge (based on computed status and resolution status)
@@ -267,9 +265,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to load listing image using apiService
     async function loadListingImage(imageName) {
         try {
-            if (imageName === 'default-organ.jpg') {
-                return 'images/default-organ.jpg';
-            }
             
             // Use the apiService to get the image URL
             const imageUrl = await apiService.getImage(imageName);
@@ -334,7 +329,6 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchListings();
 
     setInterval(() => {
-        console.log("🔁 Checking for listing status updates...");
         fetchListings(); // Re-fetch listings to reflect expired ones
       }, 30000); // check every 30 seconds
       

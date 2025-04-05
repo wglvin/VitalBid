@@ -49,18 +49,13 @@ document.addEventListener('DOMContentLoaded', function() {
     async function fetchListingDetails() {
         try {
             const listings = await apiService.getListingsWithBids();
-            console.log('Listings received:', listings);
-            console.log('Looking for listing ID:', listingId);
             
             const numericId = parseInt(listingId);
             const listing = listings.find(l => l.id === numericId || l.listing_id === numericId);
             
             if (!listing) {
-                console.log('No listing found with ID:', numericId);
                 throw new Error('Listing not found');
             }
-            console.log("Listing found:", listing);
-            console.log("Listing bids:", listing.bids);
             
             // Check if this listing has already been resolved (to handle refresh case)
             try {
@@ -103,7 +98,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     const organ = await apiService.getOrganById(listing.organ_id);
                     if (organ && organ.type) {
                         listing.organ_type = organ.type;
-                        console.log(`✅ Fetched organ type for listing details: ${organ.type}`);
                     }
                 } catch (error) {
                     console.warn('Could not fetch organ type:', error);
@@ -276,21 +270,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Check if current user is the listing owner
         const currentUserId = getCurrentUserId();
         
-        // Debug logging
-        console.log("Is listing expired?", isExpired);
-        
         // Check if the listing has an owner_id property and if it matches the current user ID
         isListingOwner = (listing.owner_id === currentUserId);
-        console.log("Is current user the owner?", isListingOwner);
         
         // If user is the listing owner AND the listing is not expired, show owner controls
         const ownerControls = document.getElementById('owner-controls');
         if (isListingOwner && isActive) {
-            console.log("Showing owner controls - listing is active and user is owner");
             ownerControls.classList.remove('hidden');
         } else {
-            console.log("Owner controls remain hidden - " + 
-                (isExpired ? "listing is expired" : "user is not the owner"));
             ownerControls.classList.add('hidden');
         }
         
@@ -372,9 +359,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const now = new Date();
           if (now >= expiryDate) {
             clearInterval(interval);
-            console.log("⏰ Listing has expired. Updating UI...");
 
-            //
             showToast("Auction has ended.")
             fetchListingDetails(); // Re-fetch to rerender with expired state
           }
@@ -399,9 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Create bid history items
-        sortedBids.forEach(bid => {
-            console.log('Bid object:', bid);
-            
+        sortedBids.forEach(bid => {      
             // Add listing_resolved flag to the bid object if the listing is resolved
             if (isResolved) {
                 bid.listing_resolved = true;
@@ -543,7 +526,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function getCurrentUserData() {
         // Use userData key (which is what login.js actually sets)
         const userData = JSON.parse(localStorage.getItem('userData') || '{"userid": 1, "email": "guest@example.com", "username": "Guest"}');
-        console.log("Retrieved user data from localStorage:", userData);
         return userData;
     }
 
@@ -584,12 +566,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Get user data from localStorage instead of hardcoding bidderId
             const userData = JSON.parse(localStorage.getItem("userData") || '{"userid": 1, "email": "guest@example.com", "username": "Guest"}');
-            console.log("Using user data for bid placement:", userData);
             
             // Use userid from userData as the bidderId
-            const bidderId = userData.userid;
-            console.log("Using bidder ID:", bidderId);
-            
+            const bidderId = userData.userid;          
             
             // // Refresh the page to show the new bid
             // window.location.reload();

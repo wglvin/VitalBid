@@ -43,7 +43,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Get current time (already in local timezone)
     const now = new Date();
-    console.log("Current time:", now.toString());
     
     // Function to format date for datetime-local input that preserves local timezone
     function formatDateForInput(date) {
@@ -58,26 +57,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set minimum time to 1 minute from now
     const minExpiryTime = new Date(now.getTime() + (60 * 1000)); // Add 1 minute
-    console.log("Minimum expiry time:", minExpiryTime.toString());
     
     // Format dates properly for input field using local time
     const formattedMinDate = formatDateForInput(minExpiryTime);
-    console.log("Formatted min date (local):", formattedMinDate);
     expiryDateInput.min = formattedMinDate;
     
     // Set default value to current time + 1 day (common listing duration)
     const defaultExpiryTime = new Date(now.getTime() + (24 * 60 * 60 * 1000)); // Add 1 day
-    console.log("Default expiry time:", defaultExpiryTime.toString());
     
     const formattedDefaultDate = formatDateForInput(defaultExpiryTime);
-    console.log("Formatted default date (local):", formattedDefaultDate);
     expiryDateInput.value = formattedDefaultDate;
     
     // Load organs for dropdown
     async function loadOrgans() {
         try {
             const organs = await apiService.getAllOrgans();
-            console.log("Loaded organs:", organs.length ? "✓" : "None found");
             
             // Populate organ select
             organs.forEach(organ => {
@@ -95,7 +89,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle form submission
     createListingForm.addEventListener('submit', async function(event) {
         event.preventDefault();
-        console.log("Form submission started");
         
         // Clear previous errors
         hideError();
@@ -103,38 +96,28 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             // Get input expiry date
             const expiryDateValue = document.getElementById('expiry-date').value;
-            console.log("Raw expiry date from input:", expiryDateValue);
             
             // When we parse a date string without timezone info, it's interpreted as local time
             const expiryDate = new Date(expiryDateValue);
-            console.log("Parsed expiry date:", expiryDate.toString());
-            
             // Compare using timestamps for accurate comparison regardless of timezone
-            console.log("Comparing timestamps:");
-            console.log("- Expiry timestamp:", expiryDate.getTime());
-            console.log("- Min expiry timestamp:", minExpiryTime.getTime());
-            console.log("- Difference (ms):", expiryDate.getTime() - minExpiryTime.getTime());
+            // console.log("Comparing timestamps:");
+            // console.log("- Expiry timestamp:", expiryDate.getTime());
+            // console.log("- Min expiry timestamp:", minExpiryTime.getTime());
+            // console.log("- Difference (ms):", expiryDate.getTime() - minExpiryTime.getTime());
             
             // Verify expiry date is at least 1 minute in the future
             if (expiryDate.getTime() <= minExpiryTime.getTime()) {
-                console.log("VALIDATION FAILED: Date not far enough in future");
                 showError('Expiry time must be at least 1 minute from now.');
                 return;
             }
             
-            console.log("Date validation passed");
             
             // For backend submission, use ISO format (converts to UTC)
             const timeEndISO = expiryDate.toISOString();
-            console.log("Final ISO time_end value:", timeEndISO);
-            
             // Get user data from localStorage
             const userData = JSON.parse(localStorage.getItem("userData") || '{"userid": 1, "email": "guest@example.com", "username": "Guest"}');
-            console.log("Using user data for listing creation:", userData);
-            
             // Store the actual email in localStorage for debugging
             localStorage.setItem("lastUsedEmail", userData.email);
-            console.log("Storing email in localStorage for debugging:", userData.email);
 
             // Handle image upload first
             const imageFile = imageInput.files[0];
@@ -145,10 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             try {
                 // Use apiService to upload the image
-                console.log("Uploading image via apiService...");
                 const uploadResult = await apiService.uploadImage(imageFile);
-                console.log("Image upload successful:", uploadResult);
-
                 // Now create the listing with the image filename
                 const listingData = {
                     name: document.getElementById('listing-name').value,
@@ -179,12 +159,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                // Submit listing
-                console.log("Calling apiService.addListing...");
-                
                 try {
                     const response = await apiService.addListing(listingData);
-                    console.log("API response:", response);
                     
                     // Redirect to the listing page using the correct ID property
                     window.location.href = "index.html";
@@ -195,7 +171,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Try to clean up the uploaded image if listing creation fails
                     try {
                         if (uploadResult && uploadResult.filename) {
-                            console.log("Cleaning up unused image:", uploadResult.filename);
                             await apiService.deleteImage(uploadResult.filename);
                         }
                     } catch (cleanupError) {

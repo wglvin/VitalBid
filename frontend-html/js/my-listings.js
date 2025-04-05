@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get current user data from localStorage
     function getCurrentUserData() {
         const userData = JSON.parse(localStorage.getItem('userData') || '{"userid": 1, "email": "guest@example.com", "username": "Guest"}');
-        console.log("Retrieved user data from localStorage:", userData);
+        // console.log("Retrieved user data from localStorage:", userData);
         return userData;
     }
 
@@ -251,24 +251,20 @@ document.addEventListener('DOMContentLoaded', function() {
     async function fetchUserListingsAndBids() {
         try {
             const currentUserId = getCurrentUserId();
-            console.log("Fetching listings and bids for user ID:", currentUserId);
 
             // Fetch all listings with bids
             const listings = await apiService.getListingsWithBids();
-            console.log("All listings received:", listings);
 
             // Check all listings for resolutions before filtering
             await checkResolutionsForListings(listings);
 
             // Filter listings owned by the current user
             const userListings = listings.filter(listing => listing.owner_id === currentUserId);
-            console.log("User's listings:", userListings);
 
             // Filter listings where the user has placed bids
             const userBids = listings.filter(listing => 
                 listing.bids && listing.bids.some(bid => bid.bidder_id === currentUserId)
             );
-            console.log("User's bids:", userBids);
 
             // Clear existing content
             myListingsContainer.innerHTML = '';
@@ -380,8 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 });
                             }
                         }
-                        
-                        console.log(`Listing ${listing.listing_id} has resolution status: ${resolution.status}`);
+
                     } else {
                         // If no resolution is found, compute status based on time
                         const isExpired = new Date(listing.time_end) <= new Date();
@@ -399,7 +394,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         const organ = await apiService.getOrganById(listing.organ_id);
                         if (organ && organ.type) {
                             listing.organ_type = organ.type;
-                            console.log(`✅ Fetched organ type for my listing ${listing.listing_id}: ${organ.type}`);
                         }
                     } catch (error) {
                         console.warn(`Could not fetch organ type for listing ${listing.listing_id}:`, error);

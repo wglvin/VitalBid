@@ -1,5 +1,3 @@
-console.log("🔒 checktoken.js loaded!");
-
 function checkAuth() {
     const token = localStorage.getItem("authToken");
 
