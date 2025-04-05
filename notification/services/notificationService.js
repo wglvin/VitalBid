@@ -3,26 +3,7 @@ const config = require('../config/config');
 const { produceMessage } = require('../kafka/kafkaProducer');
 const Notification = require('../models/notificationModel');
 
-// Function to simulate getting user email from database when only ID is available
-const simulateGetUserEmailFromDatabase = async (userId) => {
-    // This would normally query a database
-    // For demonstration purposes, we'll use a simple object to simulate a database
-    const mockUserDatabase = {
-        '1': 'moses.kng.2023@smu.edu.sg',
-        '2': 'test.user@example.com',
-        '3': 'another.user@example.com'
-    };
-    
-    const email = mockUserDatabase[userId];
-    if (!email) {
-        // For users not in our mock database, use a generated email based on ID
-        const generatedEmail = `user${userId}@organdonation.com`;
-        console.log(`User ${userId} not found in database, using generated email: ${generatedEmail}`);
-        return generatedEmail;
-    }
-    
-    return email;
-};
+
 
 // Updated function to exactly match the Python example structure
 const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
@@ -30,13 +11,6 @@ const sendDynamicEmailNotification = async (userIdOrEmail, subject, text) => {
     let userId = null;
     
     try {
-        // Check if this looks like an email address
-        if (!userIdOrEmail.includes('@')) {
-            // If not an email, treat as userId and look up
-            userId = userIdOrEmail;
-            email = await simulateGetUserEmailFromDatabase(userId);
-        }
-        
         // Use the Python-style exact API call to Mailgun
         const mailgunUrl = `https://api.mailgun.net/v3/${config.mailgun.domain}/messages`;
         
@@ -109,13 +83,8 @@ const processListingCreatedEvent = async (listing) => {
         
         // Prioritize the email from the Kafka message
         let email = listing.email;
-        
-        // Only fall back to database lookup if no email was provided
-        if (!email || !email.includes('@')) {
-            console.log(`No valid email in message, looking up email for user ${userId}`);
-            email = await simulateGetUserEmailFromDatabase(userId);
-        }
-        
+        console.log(`the received email was ${email}`)
+
         const username = listing.username || `User ${userId || 'unknown'}`;
         
         const greeting = username ? `Hello ${username},` : 'Hello,';
@@ -159,12 +128,6 @@ const processBidAcceptedEvent = async (event) => {
         // If email is available from the event, use it
         let recipientEmail = email;
         let recipientName = username || `User ${bidderId}`;
-        
-        // If no email provided, attempt to look up the bidder's email
-        if (!recipientEmail || !recipientEmail.includes('@')) {
-            console.log(`No valid email in event, looking up email for user ${bidderId}`);
-            recipientEmail = await simulateGetUserEmailFromDatabase(bidderId);
-        }
         
         const greeting = recipientName ? `Hello ${recipientName},` : 'Hello,';
         
