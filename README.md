@@ -1,4 +1,5 @@
-# Organ Auction Platform
+# VitalBid, Organ Auction Platform
+![Fun Image](21928deb-b894-4331-a2dd-cd58bb1b5747.png)
 
 ## Description
 Our organ auction platform addresses the critical shortage of accessible organ procurement systems by creating a free marketplace for people who require organs to source for them. The frontend communicates with the backend microservices through the Kong API Gateway, there is ZERO direct frontend interaction with all microservices.
@@ -7,8 +8,9 @@ Key features of our organ auction platform include:
 1.	Secure registration for both buyers and sellers
 2.	Creation of Organ Types/ Listings
 3.	Real-time bidding system for available listings
-4.	Support Payments through Stripe Payments API
-5.	Receive Email Notification through Mailgun API
+4.	Allow Early Resolution of a Listing
+5.	Support Payments through Stripe Payments API
+6.	Receive Email Notification through Mailgun API
 
 Frontend also allows:
 1.	View all organ listings with filtering by status (active/ended)
@@ -44,16 +46,18 @@ Frontend also allows:
    docker-compose down -v && docker-compose up -d --build
    ```
 
-## .env file
-1. Get .env credentials from meepok xoxo
+## ENV Variables
+1. Get .env details from submission
 
-### External Port Binding Legend
-30xx: Atomic Microservices </br>
-33xx: Atomic Database Microservices </br>
-50xx: Composite Microservices </br>
-80xx: External Techology Microservices </br>
+## Docker-Compose-Remote & Kong-remote.yaml
+1. If you would like to run bid microservice remotely
+2. Clone Repo + Delete docker-compose.yaml file and kong-remote.yaml
+3. Rename the remote files to docker-compose.yaml and kong-remote.yaml
+4. Change the env file to use the commeneted BIDDING_SERVICE_URL instead and change to the ip of the system u are running on
+5. Do the same for the docker-compose and kong routings to reference the new ip
 
 ## External Ports in Use
+2182: Zookeeper Microservice </br>
 3000: Frontend Application </br>
 3001: List Microservice </br>
 3002: Bid Microservice </br>
@@ -66,11 +70,10 @@ Frontend also allows:
 5002: Payments Microservice </br>
 8000: Kong API Gateway </br>
 8001: Kong Admin </br>
-8092: Kafka Microservice </br>
-8093: Zookeeper Microservice </br>
+9093: Kafka Microservice </br>
 
 ## Troubleshooting Guidelines 
-When unable to use e.g. port 3306, use the following command (in case your mysql is running):
+When unable to use e.g. port 3306, use the following command (in case your mysql/other service is running):
 * 1. (Windows - kill mysql)
 ```sh
 taskkill /IM mysqld.exe /F
