@@ -18,8 +18,6 @@ async function loginUser() {
         password: password
     };
 
-    console.log("📦 request Sent:", payload);
-
     try {
         const response = await fetch("http://localhost:8000/outsystems/LoginUserAPI/Login", {
             method: "POST",
@@ -30,7 +28,6 @@ async function loginUser() {
         });
 
         const result = await response.json();
-        console.log("🔍 Response:", result);
 
         if (result.success) {
             // Store both token and full response data
@@ -38,10 +35,6 @@ async function loginUser() {
             localStorage.setItem("userData", JSON.stringify(result));
 
             showToast(result.message, "success");
-            console.log("✅ Login successful - stored in localStorage:", {
-                token: result.token,
-                userData: result
-            });
 
             // Redirect to index.html after toast shows
             setTimeout(() => window.location.href = "index.html", 3500);

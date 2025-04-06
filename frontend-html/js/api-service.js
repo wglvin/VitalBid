@@ -6,8 +6,7 @@ const apiService = {
   // Helper function to get user data from localStorage
   getUserData() {
     try {
-      const userData = JSON.parse(localStorage.getItem("userData") || '{"userid": 1, "email": "guest@example.com", "username": "Guest"}');
-      console.log("Retrieved user data from localStorage:", userData);
+      const userData = JSON.parse(localStorage.getItem("userData"));
       return userData;
     } catch (error) {
       console.warn("Error parsing userData from localStorage:", error);
@@ -25,15 +24,15 @@ const apiService = {
     }
     
     // Add user metadata headers - use properties as shown in testingRedirect.html example
-    options.headers['X-User-Email'] = userData.email || "guest@example.com";
-    options.headers['X-User-Name'] = userData.username || "Guest";
-    options.headers['X-User-ID'] = userData.userid || userData.id || 1;
+    options.headers['X-User-Email'] = userData.email;
+    options.headers['X-User-Name'] = userData.username;
+    options.headers['X-User-ID'] = userData.userid;
     
-    console.log("Added user metadata to request headers:", {
-      email: options.headers['X-User-Email'],
-      username: options.headers['X-User-Name'],
-      userId: options.headers['X-User-ID']
-    });
+    // console.log("Added user metadata to request headers:", {
+    //   email: options.headers['X-User-Email'],
+    //   username: options.headers['X-User-Name'],
+    //   userId: options.headers['X-User-ID']
+    // });
     
     return options;
   },
@@ -55,7 +54,7 @@ const apiService = {
         body: formData
       });
 
-      console.log("Uploading image...");
+      // console.log("Uploading image...");
       const response = await fetch(`${API_BASE_URL}/listing/api/listings/upload`, options);
 
       if (!response.ok) {
@@ -64,7 +63,7 @@ const apiService = {
       }
 
       const result = await response.json();
-      console.log("Image upload successful:", result);
+      // console.log("Image upload successful:", result);
       return result;
     } catch (error) {
       console.error("Error in uploadImage:", error);
@@ -139,10 +138,8 @@ const apiService = {
     try {
       // Get user data from localStorage directly when creating listing
       const userData = this.getUserData();
-      console.log("Using user data for listing creation:", userData);
       
       const lastUsedEmail = localStorage.getItem("lastUsedEmail");
-      console.log("Comparing emails - Last used:", lastUsedEmail, "Current:", userData.email);
       
       if (userData.email !== lastUsedEmail) {
         console.warn("⚠️ EMAIL MISMATCH - userData email changed between form load and submission");
@@ -161,9 +158,6 @@ const apiService = {
         email: userData.email,
         username: userData.username
       };
-      
-      console.log("Final email being sent to API:", transformedData.email);
-      console.log("Data being sent to API with embedded user info:", JSON.stringify(transformedData));
       
       const options = this.addUserMetadata({
         method: "POST",
@@ -198,7 +192,6 @@ const apiService = {
 
   // Organ Service
   async getAllOrgans() {
-    console.log("Fetching organs from:", `${API_BASE_URL}/listing/api/organs`);
     const options = this.addUserMetadata();
     const response = await fetch(`${API_BASE_URL}/listing/api/organs`, options);
     if (!response.ok) {
@@ -297,8 +290,6 @@ const apiService = {
         throw new Error('bidId and listingId are required');
       }
 
-      console.log('Accepting bid with data:', { bidId, listingId });
-
       const options = this.addUserMetadata({
         method: 'POST',
         headers: {
@@ -308,11 +299,6 @@ const apiService = {
           bidId: parseInt(bidId),      // Ensure it's a number
           listingId: parseInt(listingId) // Ensure it's a number
         })
-      });
-
-      console.log('Request options:', {
-        url: `${API_BASE_URL}/resolve/api/resolutions/accept-bid`,
-        body: options.body
       });
 
       const response = await fetch(`${API_BASE_URL}/resolve/api/resolutions/accept-bid`, options);
