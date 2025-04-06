@@ -62,40 +62,55 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("Listing found:", listing);
             console.log("Listing bids:", listing.bids);
             
-            // Check if this listing has already been resolved (to handle refresh case)
+            // Always check for resolution status first before rendering
+            const resolutionServiceUrl = 'http://localhost:8000/resolve';
             try {
-                const resolutionServiceUrl = 'http://localhost:8000/resolve';
-                const res = await axios.get(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id}`);
-                if (res.data) {
-                    // If we found a resolution, mark the listing as resolved
-                    listing.is_resolved = true;
-                    listing.resolution_status = res.data.status;
-                    listing.winning_bid = res.data.winning_bid;
-                    listing.winner_id = res.data.winner_id;
-                    
-                    // Force the listing status to ended if it has been resolved
-                    listing.status = 'ended';
-                    
-                    // Also mark the winning bid as accepted
-                    if (listing.bids && listing.bids.length > 0) {
-                        const winningBidIdx = listing.bids.findIndex(bid => bid.bidder_id === res.data.winner_id && 
-                                                                 parseFloat(bid.bid_amt) === parseFloat(res.data.winning_bid));
-                        if (winningBidIdx >= 0) {
-                            listing.bids[winningBidIdx].status = 'accepted';
-                            
-                            // Mark other bids as cancelled
-                            listing.bids.forEach((bid, idx) => {
-                                if (idx !== winningBidIdx) {
-                                    bid.status = 'cancelled';
-                                }
-                            });
+                console.log("Checking for resolution status...");
+                const res = await fetch(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id || listing.id}`);
+                if (res.ok) {
+                    const resolution = await res.json();
+                    if (resolution) {
+                        console.log("Resolution found:", resolution);
+                        // If we found a resolution, mark the listing as resolved
+                        listing.is_resolved = true;
+                        listing.resolution_status = resolution.status;
+                        listing.winning_bid = resolution.winning_bid;
+                        listing.winner_id = resolution.winner_id;
+                        
+                        // Force the listing status to ended if it has been resolved
+                        listing.status = 'ended';
+                        
+                        // Also mark the winning bid as accepted
+                        if (listing.bids && listing.bids.length > 0) {
+                            const winningBidIdx = listing.bids.findIndex(bid => 
+                                bid.bidder_id === resolution.winner_id && 
+                                parseFloat(bid.bid_amt) === parseFloat(resolution.winning_bid)
+                            );
+                            if (winningBidIdx >= 0) {
+                                listing.bids[winningBidIdx].status = 'accepted';
+                                
+                                // Mark other bids as cancelled
+                                listing.bids.forEach((bid, idx) => {
+                                    if (idx !== winningBidIdx) {
+                                        bid.status = 'cancelled';
+                                    }
+                                });
+                            }
                         }
+                    } else {
+                        console.log("No resolution found for this listing");
+                        listing.is_resolved = false;
                     }
+                } else {
+                    console.log("No resolution found (non-OK response)");
+                    listing.is_resolved = false;
                 }
             } catch (error) {
                 console.warn('Could not check resolution status:', error);
-                // Continue without resolution info
+                listing.is_resolved = false;
             }
+            
+            console.log("Is listing resolved?", listing.is_resolved);
             
             // Fetch organ type if not already available
             if (listing.organ_id && !listing.organ_type) {
@@ -128,6 +143,19 @@ document.addEventListener('DOMContentLoaded', function() {
         loadingIndicator.classList.add('hidden');
         errorMessage.textContent = message;
         errorContainer.classList.remove('hidden');
+    }
+    
+    // Check if a listing is expired based on time or resolution
+    function isExpired(listing) {
+        // If there's a resolution, the listing is considered expired/ended
+        if (listing.is_resolved || listing.status === 'ended') {
+            return true;
+        }
+        
+        // Otherwise check the time
+        const now = new Date();
+        const expiryTime = new Date(listing.expiry_date || listing.time_end);
+        return now > expiryTime;
     }
     
     // Render listing details
@@ -170,61 +198,21 @@ document.addEventListener('DOMContentLoaded', function() {
             listingImageElement.parentElement.classList.remove('hidden');
         }
         
-        // Check if listing is expired based on end time or has been resolved
-        const currentTime = new Date();
-        const expiryTime = new Date(listing.time_end);
-        let isExpired = currentTime > expiryTime;
+        // Check if listing is expired based on resolution or end time
+        const expired = isExpired(listing);
         
-        // If the listing has been resolved, it's considered expired regardless of the time
-        if (listing.is_resolved) {
-            isExpired = true;
-        }
-
-        if (!isExpired) {
+        if (!expired) {
             monitorExpiry(listing.time_end); // Only monitor if still active
         }
         
-        // Check for resolution status if listing is expired
-        let resolvedStatus = null;
-        let resolutionType = null;
-        
-        if (isExpired) {
-            // First check if we already have resolution info from the fetch
-            if (listing.is_resolved && listing.resolution_status) {
-                resolvedStatus = true;
-                resolutionType = listing.resolution_status;
-            } else {
-                // Otherwise try to fetch it
-                try {
-                    const resolutionServiceUrl = 'http://localhost:8000/resolve';
-                    const res = await axios.get(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id}`);
-                    if (res.data && res.data.status) {
-                        resolvedStatus = true;
-                        resolutionType = res.data.status; // early, accepted, or cancelled
-                        
-                        // Update listing with resolution info
-                        listing.is_resolved = true;
-                        listing.resolution_status = res.data.status;
-                    }
-                } catch (error) {
-                    console.warn('Could not fetch resolution status:', error);
-                    // Continue without resolution info
-                }
-            }
-        }
-        
         // Set status badge based on expiry and resolution status
-        const isActive = !isExpired;
+        const isActive = !expired;
         
-        if (isActive) {
-            statusElement.textContent = 'Active';
-            statusElement.classList.remove('status-ended', 'status-ended-early', 'status-ended-accepted', 'status-ended-cancelled');
-            statusElement.classList.add('status-active');
-        } else if (resolvedStatus) {
+        if (listing.is_resolved) {
             // Show the resolution type if available
             let statusText = '';
             let statusClass = '';
-            switch(resolutionType) {
+            switch(listing.resolution_status) {
                 case 'early':
                     statusText = 'Ended (Early)';
                     statusClass = 'status-ended-early';
@@ -244,6 +232,10 @@ document.addEventListener('DOMContentLoaded', function() {
             statusElement.textContent = statusText;
             statusElement.classList.remove('status-active', 'status-ended', 'status-ended-early', 'status-ended-accepted', 'status-ended-cancelled');
             statusElement.classList.add(statusClass);
+        } else if (isActive) {
+            statusElement.textContent = 'Active';
+            statusElement.classList.remove('status-ended', 'status-ended-early', 'status-ended-accepted', 'status-ended-cancelled');
+            statusElement.classList.add('status-active');
         } else {
             statusElement.textContent = 'Ended';
             statusElement.classList.remove('status-active', 'status-ended-early', 'status-ended-accepted', 'status-ended-cancelled');
@@ -267,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formCurrentBid.textContent = `$${listing.start_bid.toLocaleString()} (starting bid)`;
         }
         
-        endTimeElement.textContent = expiryTime.toLocaleString();
+        endTimeElement.textContent = new Date(listing.time_end).toLocaleString();
         bidsCountElement.textContent = listing.bids_count;
         
         // Set description
@@ -277,7 +269,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentUserId = getCurrentUserId();
         
         // Debug logging
-        console.log("Is listing expired?", isExpired);
+        console.log("Is listing expired?", expired);
+        console.log("Is listing resolved?", listing.is_resolved);
         
         // Check if the listing has an owner_id property and if it matches the current user ID
         isListingOwner = (listing.owner_id === currentUserId);
@@ -290,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ownerControls.classList.remove('hidden');
         } else {
             console.log("Owner controls remain hidden - " + 
-                (isExpired ? "listing is expired" : "user is not the owner"));
+                (expired ? "listing is expired" : "user is not the owner or listing is resolved"));
             ownerControls.classList.add('hidden');
         }
         
@@ -300,8 +293,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Handle bid form visibility and winner display
         const winnerContainer = document.getElementById('winner-section-container');
 
-        if (isExpired) {
-            // Hide the bid form if listing is expired
+        if (expired || listing.is_resolved) {
+            // Hide the bid form if listing is expired or resolved
             placeBidForm.classList.add('hidden');
 
             // Show winner section if there are bids
@@ -325,21 +318,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else {
                         // Fetch resolution data
                         const resolutionServiceUrl = 'http://localhost:8000/resolve';
-                        const res = await axios.get(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id}`);
-                        const resolution = res.data;
-                
-                        winnerContainer.innerHTML = `
-                            <div class="bg-green-100 p-4 rounded-md mt-6">
-                                <h3 class="text-sm font-medium text-green-800">🏆 Winner Selected</h3>
-                                <p class="text-sm text-green-700">
-                                    Bidder ID: <strong>${resolution.winner_id}</strong> |
-                                    Winning Bid: $${resolution.winning_bid}
-                                </p>
-                                <p class="text-xs text-green-700 mt-1">
-                                    Resolution Status: <span class="font-medium">${resolution.status.toUpperCase()}</span>
-                                </p>
-                            </div>
-                        `;
+                        const res = await fetch(`${resolutionServiceUrl}/api/resolutions/listing/${listing.listing_id || listing.id}`);
+                        if (res.ok) {
+                            const resolution = await res.json();
+                            if (resolution) {
+                                winnerContainer.innerHTML = `
+                                    <div class="bg-green-100 p-4 rounded-md mt-6">
+                                        <h3 class="text-sm font-medium text-green-800">🏆 Winner Selected</h3>
+                                        <p class="text-sm text-green-700">
+                                            Bidder ID: <strong>${resolution.winner_id}</strong> |
+                                            Winning Bid: $${resolution.winning_bid}
+                                        </p>
+                                        <p class="text-xs text-green-700 mt-1">
+                                            Resolution Status: <span class="font-medium">${resolution.status.toUpperCase()}</span>
+                                        </p>
+                                    </div>
+                                `;
+                            } else {
+                                throw new Error('No resolution data found');
+                            }
+                        } else {
+                            throw new Error('Failed to fetch resolution');
+                        }
                     }
                 } catch (error) {
                     console.warn('❌ No resolution found yet. Fallback to top bid.');
@@ -368,19 +368,66 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function monitorExpiry(expiryTime) {
         const expiryDate = new Date(expiryTime);
-        const interval = setInterval(() => {
-          const now = new Date();
-          if (now >= expiryDate) {
-            clearInterval(interval);
-            console.log("⏰ Listing has expired. Updating UI...");
-
-            //
-            showToast("Auction has ended.")
-            fetchListingDetails(); // Re-fetch to rerender with expired state
-          }
-        }, 1000); // check every second
-      }
-      
+        const interval = setInterval(async () => {
+            const now = new Date();
+            
+            // Check time expiry
+            const isTimeExpired = now >= expiryDate;
+            
+            // Also check for resolution (early acceptance)
+            let isResolved = false;
+            try {
+                const resolutionServiceUrl = 'http://localhost:8000/resolve';
+                const res = await fetch(`${resolutionServiceUrl}/api/resolutions/listing/${listingId}`);
+                if (res.ok) {
+                    const resolution = await res.json();
+                    if (resolution) {
+                        isResolved = true;
+                        console.log("Resolution detected during monitoring:", resolution);
+                        
+                        // Update the state globally so it persists even after page refresh
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const currentListingId = urlParams.get('id');
+                        
+                        // Re-fetch the listing to update with resolution
+                        const listings = await apiService.getListingsWithBids();
+                        const listing = listings.find(l => l.id === parseInt(currentListingId) || l.listing_id === parseInt(currentListingId));
+                        
+                        if (listing) {
+                            // Update listing with resolution data
+                            listing.is_resolved = true;
+                            listing.resolution_status = resolution.status;
+                            listing.winner_id = resolution.winner_id;
+                            listing.winning_bid = resolution.winning_bid;
+                            
+                            // Force status to ended
+                            listing.status = 'ended';
+                            
+                            console.log("Listing updated with resolution data during monitoring");
+                        }
+                    }
+                }
+            } catch (error) {
+                // Ignore resolution check errors, we'll try again on next interval
+                console.warn("Error checking for resolutions:", error);
+            }
+            
+            if (isTimeExpired || isResolved) {
+                clearInterval(interval);
+                console.log("⏰ Listing has expired or been resolved. Updating UI...");
+                
+                if (isResolved) {
+                    showToast("This listing has been resolved.");
+                } else {
+                    showToast("Auction has ended.");
+                }
+                
+                // Re-fetch to update the UI with the current state
+                fetchListingDetails(); 
+            }
+        }, 5000); // check every 5 seconds
+    }
+    
     // Render bid history
     function renderBidHistory(bids, isActive, isResolved) {
         if (!bids || bids.length === 0) {
@@ -439,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 2. Listing is active AND
             // 3. Bid is not already accepted AND
             // 4. Listing is not already resolved
-            if (isListingOwner && isActive && !isAccepted && !bid.listing_resolved) {
+            if (isListingOwner && isActive && !isAccepted && !isResolved) {
                 const acceptButton = document.createElement('button');
                 acceptButton.textContent = 'Accept Bid';
                 acceptButton.classList.add('accept-bid-btn', 'ml-2', 'px-2', 'py-1', 'text-xs', 
@@ -447,82 +494,124 @@ document.addEventListener('DOMContentLoaded', function() {
             
                 acceptButton.addEventListener('click', async (event) => {
                     event.preventDefault();
+                    
+                    // Disable all accept buttons to prevent double acceptance
+                    document.querySelectorAll('.accept-bid-btn').forEach(btn => {
+                        btn.disabled = true;
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    });
+                    
                     try {
-                      const urlParams = new URLSearchParams(window.location.search);
-                      const listingId = urlParams.get('id');
-                  
-                      // Call API to accept the bid
-                      const resolution = await apiService.acceptBid(bid.bid_id, listingId);
-                  
-                      // 🔄 Update status in UI
-                      statusElement.textContent = 'Accepted';
-                      statusElement.classList.remove('hidden');
-                      statusElement.classList.add('bid-status-accepted');
-                  
-                      // 🚫 Remove the accept button
-                      acceptButton.remove();
-                  
-                      // ✅ Disable all other accept buttons (optional)
-                      document.querySelectorAll('.accept-bid-btn').forEach(btn => btn.remove());
-                      
-                      // 🔄 Update the listing status from "Active" to "Ended"
-                      const listingStatusElement = document.getElementById('listing-status');
-                      // Use the resolution status from the API response
-                      const bidAcceptedStatus = resolution && resolution.status ? resolution.status : 'early';
-                      
-                      // Set different text and style based on resolution status
-                      let statusText = '';
-                      let statusClass = '';
-                      switch(bidAcceptedStatus) {
-                          case 'early':
-                              statusText = 'Ended (Early)';
-                              statusClass = 'status-ended-early';
-                              break;
-                          case 'accepted':
-                              statusText = 'Ended (Accepted)';
-                              statusClass = 'status-ended-accepted';
-                              break;
-                          case 'cancelled':
-                              statusText = 'Ended (Cancelled)';
-                              statusClass = 'status-ended-cancelled';
-                              break;
-                          default:
-                              statusText = 'Ended (Early)';
-                              statusClass = 'status-ended-early';
-                      }
-                      
-                      listingStatusElement.textContent = statusText;
-                      listingStatusElement.classList.remove('status-active', 'status-ended', 'status-ended-early', 'status-ended-accepted', 'status-ended-cancelled');
-                      listingStatusElement.classList.add(statusClass);
-                      
-                      // 🚫 Hide the bid form since the listing is now ended
-                      const placeBidForm = document.getElementById('place-bid-form');
-                      placeBidForm.classList.add('hidden');
-                      
-                      // 🎯 Show winner section with resolution status
-                      const winnerContainer = document.getElementById('winner-section-container');
-                      
-                      winnerContainer.innerHTML = `
-                        <div class="bg-green-100 p-4 rounded-md mt-6">
-                          <h3 class="text-sm font-medium text-green-800">🏆 Winner Selected</h3>
-                          <p class="text-sm text-green-700">
-                            Bidder ID: <strong>${bid.bidder_id}</strong> | Winning Bid: $${bid.bid_amt}
-                          </p>
-                          <p class="text-xs text-green-700 mt-1">
-                            Resolution Status: <span class="font-medium">${bidAcceptedStatus.toUpperCase()}</span>
-                          </p>
-                        </div>
-                      `;
-                      
-                      // 🚫 Hide owner controls since listing is now ended
-                      const ownerControls = document.getElementById('owner-controls');
-                      ownerControls.classList.add('hidden');
-                  
-                      showToast("✅ Bid accepted successfully! Listing status updated to Ended.");
-                      
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const listingId = urlParams.get('id');
+                    
+                        // Show toast to indicate processing
+                        showToast("Processing bid acceptance...");
+                        
+                        // Call API to accept the bid
+                        const resolution = await apiService.acceptBid(bid.bid_id, listingId);
+                        console.log("Resolution result:", resolution);
+                        
+                        if (!resolution) {
+                            throw new Error("Failed to get resolution data from server");
+                        }
+                    
+                        // 🔄 Update status in UI
+                        statusElement.textContent = 'Accepted';
+                        statusElement.classList.remove('hidden');
+                        statusElement.classList.add('bid-status-accepted');
+                    
+                        // 🚫 Remove the accept button
+                        acceptButton.remove();
+                    
+                        // ✅ Disable all other accept buttons
+                        document.querySelectorAll('.accept-bid-btn').forEach(btn => btn.remove());
+                        
+                        // 🔄 Update the listing status from "Active" to "Ended"
+                        const listingStatusElement = document.getElementById('listing-status');
+                        // Use the resolution status from the API response
+                        const bidAcceptedStatus = resolution && resolution.status ? resolution.status : 'early';
+                        
+                        // Set different text and style based on resolution status
+                        let statusText = '';
+                        let statusClass = '';
+                        switch(bidAcceptedStatus) {
+                            case 'early':
+                                statusText = 'Ended (Early)';
+                                statusClass = 'status-ended-early';
+                                break;
+                            case 'accepted':
+                                statusText = 'Ended (Accepted)';
+                                statusClass = 'status-ended-accepted';
+                                break;
+                            case 'cancelled':
+                                statusText = 'Ended (Cancelled)';
+                                statusClass = 'status-ended-cancelled';
+                                break;
+                            default:
+                                statusText = 'Ended (Early)';
+                                statusClass = 'status-ended-early';
+                        }
+                        
+                        listingStatusElement.textContent = statusText;
+                        listingStatusElement.classList.remove('status-active', 'status-ended', 'status-ended-early', 'status-ended-accepted', 'status-ended-cancelled');
+                        listingStatusElement.classList.add(statusClass);
+                        
+                        // 🚫 Hide the bid form since the listing is now ended
+                        const placeBidForm = document.getElementById('place-bid-form');
+                        placeBidForm.classList.add('hidden');
+                        
+                        // 🎯 Show winner section with resolution status
+                        const winnerContainer = document.getElementById('winner-section-container');
+                        
+                        winnerContainer.innerHTML = `
+                            <div class="bg-green-100 p-4 rounded-md mt-6">
+                                <h3 class="text-sm font-medium text-green-800">🏆 Winner Selected</h3>
+                                <p class="text-sm text-green-700">
+                                    Bidder ID: <strong>${bid.bidder_id}</strong> | Winning Bid: $${bid.bid_amt}
+                                </p>
+                                <p class="text-xs text-green-700 mt-1">
+                                    Resolution Status: <span class="font-medium">${bidAcceptedStatus.toUpperCase()}</span>
+                                </p>
+                            </div>
+                        `;
+                        
+                        // 🚫 Hide owner controls since listing is now ended
+                        const ownerControls = document.getElementById('owner-controls');
+                        ownerControls.classList.add('hidden');
+                        
+                        // Update the global listing state
+                        try {
+                            const listings = await apiService.getListingsWithBids();
+                            const listing = listings.find(l => l.id === parseInt(listingId) || l.listing_id === parseInt(listingId));
+                            
+                            if (listing) {
+                                // Mark the listing as resolved with the resolution data
+                                listing.is_resolved = true;
+                                listing.resolution_status = bidAcceptedStatus;
+                                listing.winner_id = bid.bidder_id;
+                                listing.winning_bid = bid.bid_amt;
+                                
+                                // Force status to ended
+                                listing.status = 'ended';
+                                
+                                console.log("Global listing state updated with resolution data");
+                            }
+                        } catch (error) {
+                            console.warn("Could not update global listing state:", error);
+                        }
+                    
+                        showToast("✅ Bid accepted successfully! Listing status updated to Ended.");
+                        
                     } catch (error) {
-                      console.error('Error accepting bid:', error);
-                      showError('Failed to accept bid: ' + error.message);
+                        // Re-enable accept buttons if there was an error
+                        document.querySelectorAll('.accept-bid-btn').forEach(btn => {
+                            btn.disabled = false;
+                            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        });
+                        
+                        console.error('Error accepting bid:', error);
+                        showError('Failed to accept bid: ' + (error.message || JSON.stringify(error)));
                     }
                 });
                 
@@ -570,6 +659,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         try {
+            // First check if the listing is resolved (additional client-side validation)
+            const resolutionServiceUrl = 'http://localhost:8000/resolve';
+            try {
+                const res = await fetch(`${resolutionServiceUrl}/api/resolutions/listing/${listingId}`);
+                if (res.ok) {
+                    const resolution = await res.json();
+                    if (resolution) {
+                        showBidError('This listing has been resolved. Bidding is no longer available.');
+                        // Refresh the page to show the resolved status
+                        setTimeout(() => window.location.reload(), 2000);
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.warn('Error checking resolution status:', error);
+                // Continue with time-based checks
+            }
+            
             // Check if the listing is expired (additional client-side validation)
             const listingData = await apiService.getListingById(listingId);
             const currentTime = new Date();
@@ -590,9 +697,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const bidderId = userData.userid;
             console.log("Using bidder ID:", bidderId);
             
+            // Submit the bid
+            const result = await apiService.placeBid(bidderId, listingId, bidAmount);
+            console.log("Bid placed successfully:", result);
             
-            // // Refresh the page to show the new bid
-            // window.location.reload();
+            // Show success message
+            showToast("Bid placed successfully!");
+            
+            // Refresh the page after a short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
         } catch (error) {
             console.error('Error placing bid:', error);
 
@@ -600,9 +715,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 ? error
                 : (error.message || JSON.stringify(error));
             
-            // Check if the error contains a message about the listing being expired
-            if (errorMsg.toLowerCase().includes('expired')) {
-                showBidError('This listing has expired. Bidding is no longer available.');
+            // Check if the error contains a message about the listing being expired or resolved
+            if (errorMsg.toLowerCase().includes('expired') || errorMsg.toLowerCase().includes('resolved')) {
+                showBidError('This listing has ended. Bidding is no longer available.');
                 // Refresh the page to update the UI
                 setTimeout(() => window.location.reload(), 2000);
             } else {
