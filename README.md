@@ -1,5 +1,5 @@
 # VitalBid, Organ Auction Platform
-![Fun Image](21928deb-b894-4331-a2dd-cd58bb1b5747.png)
+![Fun Image](dd1efe8a-f16f-4d8e-8456-0e2b5c5e6b65.png)
 
 ## Description
 Our organ auction platform addresses the critical shortage of accessible organ procurement systems by creating a free marketplace for people who require organs to source for them. The frontend communicates with the backend microservices through the Kong API Gateway, there is ZERO direct frontend interaction with all microservices.
