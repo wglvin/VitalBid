@@ -237,7 +237,7 @@
         
         return await response.json();
       } catch (err) {
-        console.error("Failed to fetch payment details:", err);
+        // console.error("Failed to fetch payment details:", err);
         return null;
       }
     }
@@ -345,14 +345,14 @@
       }
       // Place the bid after confirming payment
       async function placeBidAfterPayment() {
-        console.log("placeBidAfterPayment() was called");
+        // console.log("placeBidAfterPayment() was called");
         try {
           const { listingId, amount } = getQueryParams();
           const userData = JSON.parse(localStorage.getItem("userData") || '{}');
           const bidderId = userData.userid;
 
           if (!listingId || !amount || !bidderId) {
-            console.error("Missing required data for placing bid.");
+            // console.error("Missing required data for placing bid.");
             return;
           }
 
@@ -373,12 +373,12 @@
           });
 
           const data = await response.json();
-          console.log("✅ Bid response from backend:", data);
+          // console.log("✅ Bid response from backend:", data);
 
 
           if (!response.ok) {
             const errorData = await response.json();
-            console.error("Bid error response:", errorData);
+            // console.error("Bid error response:", errorData);
             throw new Error(errorData.message || "Failed to place bid after payment");
           }
 
@@ -390,7 +390,7 @@
           // }, 1000);
 
         } catch (err) {
-          console.error("Error placing bid after payment:", err);
+          // console.error("Error placing bid after payment:", err);
         }
     }
 

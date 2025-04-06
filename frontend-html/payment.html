@@ -363,7 +363,7 @@
           throw new Error(data.error || 'Failed to create payment intent');
         }
         
-        console.log("Payment intent created successfully:", data);
+        // console.log("Payment intent created successfully:", data);
         // Store the payment intent ID and client secret
         paymentIntentId = data.id;
         paymentIntentClientSecret = data.client_secret;
@@ -383,7 +383,7 @@
      */
     async function confirmPayment(clientSecret, cardholderName, listingId, listingTitle, amount) {
       try {
-        console.log("Confirming payment with client secret:", clientSecret);
+        // console.log("Confirming payment with client secret:", clientSecret);
         
         const result = await stripe.confirmCardPayment(clientSecret, {
           payment_method: {
@@ -398,7 +398,7 @@
           console.error("Payment confirmation error:", result.error);
           document.getElementById('card-errors').textContent = result.error.message;
         } else {
-          console.log("Payment result:", result);
+          // console.log("Payment result:", result);
           
           if (result.paymentIntent.status === 'succeeded') {
 
@@ -435,7 +435,7 @@
         // The card action has been handled
         if (updatedPaymentIntent.status === 'requires_confirmation') {
           // The payment requires confirmation
-          console.log("Payment requires confirmation after action");
+          // console.log("Payment requires confirmation after action");
         } else if (updatedPaymentIntent.status === 'succeeded') {
           const { listingId, listingTitle, amount } = getQueryParams();
           window.location.href = `payment_confirmation.html?payment_intent=${updatedPaymentIntent.id}&listingId=${encodeURIComponent(listingId)}&listingTitle=${encodeURIComponent(listingTitle)}&amount=${encodeURIComponent(amount)}`;
@@ -463,7 +463,7 @@
           throw new Error(data.error || 'Failed to check payment status');
         }
         
-        console.log("Payment status check:", data);
+        // console.log("Payment status check:", data);
         
         if (data.status === 'succeeded') {
           window.location.href = `payment_confirmation.html?payment_intent=${paymentIntentId}&listingId=${encodeURIComponent(listingId)}&listingTitle=${encodeURIComponent(listingTitle)}&amount=${encodeURIComponent(amount)}`;
@@ -537,7 +537,7 @@
       if (listingId) {
         try {
           const data = await createPaymentIntent(listingId, amount || 210.00);
-          console.log("Payment intent data:", data);
+          // console.log("Payment intent data:", data);
           
           if (!data || !data.client_secret) {
             throw new Error("Could not create payment intent");
@@ -557,7 +557,7 @@
       paymentForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        console.log("Form submitted. Payment intent client secret:", paymentIntentClientSecret);
+        // console.log("Form submitted. Payment intent client secret:", paymentIntentClientSecret);
     
         const nameOnCardElement = document.getElementById('card-name');
         const nameOnCard = nameOnCardElement ? nameOnCardElement.value : 'User';
