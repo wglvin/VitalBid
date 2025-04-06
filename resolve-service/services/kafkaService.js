@@ -11,14 +11,18 @@ const kafka = new Kafka({
 const producer = kafka.producer();
 let isConnected = false;
 
-// Connect to Kafka on service initialization
+// Connect to Kafka only when needed
 const connect = async () => {
   try {
-    await producer.connect();
-    isConnected = true;
-    console.log('Connected to Kafka');
+    if (!isConnected) {
+      await producer.connect();
+      isConnected = true;
+      console.log('Connected to Kafka');
+    }
+    return true;
   } catch (error) {
     console.error('Failed to connect to Kafka:', error);
+    return false;
   }
 };
 
@@ -38,8 +42,12 @@ const disconnect = async () => {
 // Send message to Kafka topic
 const produceMessage = async (topic, message) => {
   try {
+    // Try to connect if not already connected
+    await connect();
+    
     if (!isConnected) {
-      await connect();
+      console.log(`[KAFKA DISABLED] Would have sent message to topic ${topic}:`, message);
+      return { status: 'skipped', reason: 'kafka_not_connected' };
     }
     
     await producer.send({
@@ -48,15 +56,15 @@ const produceMessage = async (topic, message) => {
     });
     
     console.log(`Message sent to Kafka topic ${topic}`);
-    return true;
+    return { status: 'success' };
   } catch (error) {
     console.error(`Failed to send message to Kafka topic ${topic}:`, error);
-    return false;
+    return { status: 'error', error: error.message };
   }
 };
 
-// Initialize connection
-connect();
+// No longer initialize connection at startup
+// connect();  <- removed this line
 
 // Handle process termination
 process.on('SIGTERM', disconnect);
