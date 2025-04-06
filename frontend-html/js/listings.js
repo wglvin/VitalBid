@@ -172,12 +172,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const statusBadge = clone.querySelector('.listing-status');
                 if (statusBadge) {
                     if (listing.status === 'ended') {
-                        // Always show "Ended" as the primary status for all ended listings
-                        statusBadge.textContent = 'Ended';
-                        statusBadge.classList.add('bg-gray-300', 'text-gray-700', 'px-2', 'py-1', 'rounded', 'text-xs', 'font-semibold');
-                        
-                        // If we have resolution status, add a small badge with the specific type
-                        if (listing.resolution_status) {
+                        if (listing.is_resolved && listing.resolution_status) {
+                            // Show resolution status for resolved listings
+                            statusBadge.textContent = 'Ended';
+                            statusBadge.classList.add('bg-gray-300', 'text-gray-700', 'px-2', 'py-1', 'rounded', 'text-xs', 'font-semibold');
+                            
                             // Create sub-status badge
                             const subStatusBadge = document.createElement('span');
                             let subStatusText = '';
@@ -207,6 +206,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const badgeContainer = statusBadge.parentNode;
                                 badgeContainer.appendChild(subStatusBadge);
                             }
+                        } else {
+                            // Just show "Ended" for time-based expiry without resolution
+                            statusBadge.textContent = 'Ended';
+                            statusBadge.classList.add('bg-gray-300', 'text-gray-700', 'px-2', 'py-1', 'rounded', 'text-xs', 'font-semibold');
                         }
                     } else if (listing.status === 'active') {
                         statusBadge.textContent = 'Active';
