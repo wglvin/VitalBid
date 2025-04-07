@@ -87,12 +87,14 @@ sudo lsof -i :3306
 sudo kill -9 <PID>
 ```
 ## Enabling Notifications from VitalBid
-1. Look for an email from Mailgun
+1. Look for an email from support@mailgun.net
 2. Click 'I Agree' in the email.
-3. If you didn't receive the email, go to Microsoft Defender and navingate to the quarantined emails.
-4. Find an email from Mailgun there, and click "release message".
-5. Click "Trust sender"
-6. Now you can continually receieve emails from VitalBid via Mailgun.
+3. After clicking agree, VitalBids will send notifications to you via email from postmaster@sandbox65242f474b894e96829c45f1dba5c060.mailgun.org. Emails from this address will initially be quarantined by Microsoft Defender.
+4. Create a listing on VitalBid to first trigger this email, to which an email will be quarantined.
+5. Head to Microsoft Defender and navigate to the quarantined emails.
+6. Find an email from postmaster, and click "release message".
+7. Click "Trust sender".
+8. Now you can continually receieve emails from VitalBid via Mailgun.
 
 For more information of the guide, see the appendix of the report.
 
