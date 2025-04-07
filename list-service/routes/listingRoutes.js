@@ -20,7 +20,4 @@ router.post('/', listingController.createListing);
 // PUT update a listing
 router.put('/:id', listingController.updateListing);
 
-// DELETE a listing
-router.delete('/:id', listingController.deleteListing);
-
 module.exports = router; 

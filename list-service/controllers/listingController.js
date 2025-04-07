@@ -267,23 +267,3 @@ exports.updateListing = async (req, res) => {
     return res.status(500).json({ message: 'Failed to update listing', error: error.message });
   }
 };
-
-// Delete listing
-exports.deleteListing = async (req, res) => {
-  try {
-    const listing = await Listing.findByPk(req.params.id);
-    
-    if (!listing) {
-      return res.status(404).json({ message: 'Listing not found' });
-    }
-    
-    // Only allow deletion if no bids have been placed
-    // In a real application, you might check with the bidding service first
-    
-    await listing.destroy();
-    return res.status(200).json({ message: 'Listing deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting listing:', error);
-    return res.status(500).json({ message: 'Failed to delete listing', error: error.message });
-  }
-};
