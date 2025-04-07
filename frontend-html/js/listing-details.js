@@ -940,7 +940,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    async function fetchAndRenderBiddingStats(listingId) {
+        try {
+            console.log(`Fetching stats for listing ID: ${listingId}`);
+            const response = await fetch(`http://localhost:5001/api/bids/stats/${listingId}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch bidding stats: ${response.statusText}`);
+            }
+    
+            const stats = await response.json();
+            console.log('Fetched stats:', stats);
+    
+            // Update the stats in the DOM
+            document.getElementById('max-bid').textContent = `Max Bid: $${stats.max_bid.toFixed(2)}`;
+            document.getElementById('min-bid').textContent = `Min Bid: $${stats.min_bid.toFixed(2)}`;
+            document.getElementById('avg-bid').textContent = `Avg Bid: $${stats.avg_bid.toFixed(2)}`;
+        } catch (error) {
+            console.error('Error fetching bidding stats:', error);
+            document.getElementById('bidding-stats').textContent = 'Failed to load bidding stats.';
+        }
+    }
+    
     // Initialize the page
     fetchListingDetails();
-    
+    fetchAndRenderBiddingStats(listingId);
 });
