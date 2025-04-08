@@ -70,7 +70,6 @@ Frontend also allows:
 5. Do the same for the docker-compose and kong routings to reference the new ip
 
 ## External Ports in Use
-2182: Zookeeper Microservice </br>
 3000: Frontend Application </br>
 3001: List Microservice </br>
 3002: Bid Microservice </br>
@@ -84,6 +83,7 @@ Frontend also allows:
 8000: Kong API Gateway </br>
 8001: Kong Admin </br>
 9093: Kafka Microservice </br>
+22182: Zookeeper Service </br>
 
 ## Troubleshooting Guidelines 
 When unable to use e.g. port 3306, use the following command (in case your mysql/other service is running):
