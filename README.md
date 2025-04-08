@@ -60,7 +60,10 @@ Frontend also allows:
    ```
 
 ## ENV Variables
-1. Get .env details from submission
+1. use .env file within the report
+
+## Outsystem Code
+1. Stored in userAuth.oml, within zip
 
 ## Docker-Compose-Remote & Kong-remote.yaml
 1. If you would like to run bid microservice remotely
