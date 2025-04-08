@@ -957,7 +957,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('avg-bid').textContent = `Avg Bid: $${stats.avg_bid.toFixed(2)}`;
         } catch (error) {
             console.error('Error fetching bidding stats:', error);
-            document.getElementById('bidding-stats').textContent = 'Failed to load bidding stats.';
+            document.getElementById('bidding-stats').style.display = 'none'; // Hide the stats container
         }
     }
     
