@@ -4,6 +4,19 @@
 ## Description
 Our organ auction platform addresses the critical shortage of accessible organ procurement systems by creating a free marketplace for people who require organs to source for them. The frontend communicates with the backend microservices through the Kong API Gateway, there is ZERO direct frontend interaction with all microservices.
 
+
+✅ **UNSDG 3 – Good Health and Well-being**  
+**How it connects**: The core goal of your platform is to facilitate organ availability and access in a transparent, efficient, and ethical way. By streamlining the listing, bidding, and matching process, your system can help reduce waiting times and improve transplant outcomes.  
+**Example**: Timely access to organ transplants saves lives and improves the quality of life for people with critical conditions.
+
+✅ **UNSDG 10 – Reduced Inequalities**  
+**How it connects**: If the platform ensures fair access to organs regardless of socioeconomic status or geography, it contributes to reducing healthcare inequality.  
+**Example**: By using transparent criteria and smart notifications, everyone in the system has equal opportunity to find the organ they need.
+
+✅ **UNSDG 9 – Industry, Innovation, and Infrastructure**  
+**How it connects**: The platform’s use of scalable microservices, Kafka for real-time updates, and integrations for secure messaging and payments represents an innovative digital health infrastructure.  
+**Example**: Enables health tech innovation and supports more coordinated organ donation systems.
+
 Key features of our organ auction platform include:
 1.	Secure registration for both buyers and sellers
 2.	Creation of Organ Types/ Listings
